@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Youtube, Twitter } from 'lucide-react';
 import Logo from '@/components/common/Logo';
 import { brand } from '@/config/brand';
+import { useContact } from '@/hooks/useContact';
 import { useStore } from '@/context/StoreContext';
 import { useLocalized } from '@/hooks/useLocalized';
 
@@ -17,6 +18,7 @@ function Col({ title, links }) {
 }
 
 export default function Footer() {
+  const contact = useContact();
   const { t, l } = useLocalized();
   const { categories } = useStore();
   return (
@@ -37,10 +39,10 @@ export default function Footer() {
         <div>
           <h3 className="mb-4 font-sans text-[12px] font-semibold uppercase tracking-[.14em] text-charcoal-400">{t('footer.contactUs')}</h3>
           <ul className="space-y-2.5 text-sm text-charcoal-600">
-            <li className="select-all">{brand.contact.phone}</li>
-            <li className="select-all break-all">{brand.contact.email}</li>
+            <li className="select-all">{contact.phone}</li>
+            <li className="select-all break-all">{contact.email}</li>
             <li className="text-charcoal-500">{brand.contact.hours}</li>
-            <li className="text-charcoal-500">{brand.contact.address}</li>
+            <li className="text-charcoal-500">{contact.address}</li>
           </ul>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li><Link to="/about" className="text-charcoal-600 hover:text-chilli">{t('nav.about')}</Link></li>

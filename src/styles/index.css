@@ -77,6 +77,29 @@
 .skeleton { background: linear-gradient(90deg, rgba(40,37,34,.05) 25%, rgba(40,37,34,.1) 37%, rgba(40,37,34,.05) 63%); background-size: 800px 100%; @apply animate-shimmer rounded-lg; }
 .text-balance { text-wrap: balance; }
 .marquee-track:hover { animation-play-state: paused; }
+/* Admin (premium) — in a layer so utilities like pl-10 still win */
+@layer components {
+.adm-scope :is(h1, h2, h3, h4) { font-family: Manrope, "Noto Sans Devanagari", system-ui, sans-serif; color: inherit; }
+.adm-card { border-radius: 22px; border: 1px solid rgba(0,0,0,.06); background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 32px -20px rgba(0,0,0,.2); }
+.adm-spot::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .35s ease;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--chilli) / .09), transparent 45%); }
+.adm-spot:hover::before { opacity: 1; }
+.adm-bg { background-color: #F6F5F2; background-image: radial-gradient(1100px 500px at 100% -10%, rgb(var(--chilli) / .06), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgb(var(--turmeric) / .08), transparent 60%); }
+.adm-side { background: radial-gradient(500px 300px at 0% 0%, rgb(var(--chilli) / .28), transparent 60%), radial-gradient(400px 300px at 100% 100%, rgb(var(--turmeric) / .12), transparent 60%), #121010; }
+.adm-table { width: 100%; font-size: 14px; }
+.adm-table th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: rgb(var(--charcoal-400)); padding: 10px 14px; background: #FAFAF8; border-bottom: 1px solid rgba(0,0,0,.06); white-space: nowrap; }
+.adm-table td { padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,.05); vertical-align: middle; }
+.adm-table tbody tr { transition: background-color .2s ease; }
+.adm-table tbody tr:hover { background: rgb(var(--chilli) / .025); }
+.adm-input { @apply h-10 w-full rounded-xl border border-black/10 bg-white px-3.5 text-sm outline-none transition focus:border-chilli/50 focus:ring-4 focus:ring-chilli/10; }
+.adm-btn { @apply inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition active:scale-[.97] disabled:opacity-40; }
+.adm-btn-primary { @apply adm-btn bg-charcoal text-white shadow-[0_8px_20px_-10px_rgba(0,0,0,.6)] hover:bg-chilli; }
+.adm-btn-accent { @apply adm-btn bg-chilli text-white shadow-[0_8px_20px_-10px_rgb(var(--chilli)/.8)] hover:bg-chilli-700; }
+.adm-btn-ghost { @apply adm-btn border border-black/10 bg-white text-charcoal hover:border-black/20 hover:bg-black/[.02]; }
+.adm-icon { @apply inline-flex h-9 w-9 items-center justify-center rounded-xl text-charcoal-500 transition hover:bg-black/[.05] hover:text-charcoal; }
+
+}
+
 /* WhatsApp-style review wall */
 .wa-wall { background-color: #EFEAE2; background-image: radial-gradient(rgba(84,101,111,.07) 1.2px, transparent 1.3px), radial-gradient(rgba(84,101,111,.05) 1px, transparent 1.1px); background-size: 22px 22px, 34px 34px; background-position: 0 0, 11px 17px; }
 .wa-tail::before { content: ""; position: absolute; top: 0; width: 12px; height: 14px; }

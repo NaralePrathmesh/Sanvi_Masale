@@ -3,9 +3,8 @@ import { ArrowUp, Phone } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useLocalized } from '@/hooks/useLocalized';
 import { useCompare } from '@/context/CompareContext';
-import { brand } from '@/config/brand';
+import { useContact } from '@/hooks/useContact';
 
-const digits = (n) => n.replace(/[^\d]/g, '');
 
 const WhatsAppIcon = (props) => (
   <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" {...props}>
@@ -18,6 +17,7 @@ export default function ScrollFX() {
   const { t } = useLocalized();
   const { pathname } = useLocation();
   const { ids: compareIds } = useCompare();
+  const contact = useContact();
   const [p, setP] = useState(0);
   useEffect(() => {
     let raf = 0;
@@ -36,7 +36,7 @@ export default function ScrollFX() {
   const mobileBar = pathname.startsWith('/product/') || pathname === '/cart';
   const lift = compareOpen ? 'bottom-28' : mobileBar ? 'bottom-24 lg:bottom-6' : 'bottom-5 sm:bottom-6';
   if (pathname.startsWith('/checkout')) return <ProgressLine p={p} />;
-  const wa = `https://wa.me/${digits(brand.contact.whatsapp)}?text=${encodeURIComponent(t('common.whatsappMsg'))}`;
+  const wa = `https://wa.me/${contact.waDigits}?text=${encodeURIComponent(t('common.whatsappMsg'))}`;
   const fab = 'relative flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lift transition duration-300 hover:-translate-y-1 hover:scale-105 focus-visible:outline-none focus-visible:ring-4';
   return (
     <>
@@ -48,7 +48,7 @@ export default function ScrollFX() {
           <span aria-hidden="true" className="absolute inset-0 animate-ping rounded-full bg-[#25D366]/40 [animation-duration:2.4s] motion-reduce:hidden" />
           <WhatsAppIcon className="relative h-6 w-6" />
         </a>
-        <a href={`tel:+${digits(brand.contact.phone)}`} aria-label={`${t('common.callUs')} ${brand.contact.phone}`} title={`${t('common.callUs')} · ${brand.contact.phone}`}
+        <a href={`tel:${contact.tel}`} aria-label={`${t('common.callUs')} ${contact.phone}`} title={`${t('common.callUs')} · ${contact.phone}`}
           className={`${fab} bg-gradient-to-br from-chilli to-chilli-deep ring-chilli/30`}>
           <Phone size={20} className="fill-current" />
         </a>

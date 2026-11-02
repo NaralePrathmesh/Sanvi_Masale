@@ -5,6 +5,7 @@ import { categories as defaultCategories } from '@/data/categories';
 import { recipes as defaultRecipes } from '@/data/recipes';
 import { defaultBanners, defaultAnnouncements, defaultHomeContent } from '@/data/banners';
 import { defaultCoupons, defaultSettings } from '@/config/site';
+import { customerReviews as defaultReviews } from '@/data/customerReviews';
 
 /**
  * Catalogue + store configuration. Seeded from /src/data and editable from the
@@ -21,7 +22,10 @@ export function StoreProvider({ children }) {
   const [banners, setBanners] = usePersistentState('banners', defaultBanners);
   const [announcements, setAnnouncements] = usePersistentState('announcements', defaultAnnouncements);
   const [homeContent, setHomeContent] = usePersistentState('homeContent', defaultHomeContent);
-  const [settings, setSettings] = usePersistentState('settings', defaultSettings);
+  const [storedSettings, setSettings] = usePersistentState('settings', defaultSettings);
+  // New settings keys added after a visitor's data was saved still get their defaults.
+  const settings = useMemo(() => ({ ...defaultSettings, ...storedSettings }), [storedSettings]);
+  const [reviews, setReviews] = usePersistentState('reviews', defaultReviews);
 
   const byId = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
   const activeProducts = useMemo(() => products.filter((p) => p.active !== false), [products]);
@@ -34,15 +38,15 @@ export function StoreProvider({ children }) {
   const resetStore = useCallback(() => {
     setProducts(defaultProducts); setCategories(defaultCategories); setCoupons(defaultCoupons);
     setBanners(defaultBanners); setAnnouncements(defaultAnnouncements); setHomeContent(defaultHomeContent);
-    setSettings(defaultSettings); setRecipes(defaultRecipes.map((r) => ({ active: true, featured: true, ...r })));
-  }, [setProducts, setCategories, setCoupons, setBanners, setAnnouncements, setHomeContent, setSettings, setRecipes]);
+    setSettings(defaultSettings); setReviews(defaultReviews); setRecipes(defaultRecipes.map((r) => ({ active: true, featured: true, ...r })));
+  }, [setProducts, setCategories, setCoupons, setBanners, setAnnouncements, setHomeContent, setSettings, setRecipes, setReviews]);
 
   const value = useMemo(() => ({
     products, activeProducts, setProducts, getProduct, getBySlug, upsertProduct, deleteProduct,
     categories, setCategories, recipes, setRecipes, activeRecipes: recipes.filter((r) => r.active !== false),
     coupons, setCoupons, banners, setBanners, announcements, setAnnouncements, homeContent, setHomeContent,
-    settings, setSettings, resetStore,
-  }), [products, activeProducts, setProducts, getProduct, getBySlug, upsertProduct, deleteProduct, categories, setCategories, recipes, setRecipes, coupons, setCoupons, banners, setBanners, announcements, setAnnouncements, homeContent, setHomeContent, settings, setSettings, resetStore]);
+    settings, setSettings, reviews, setReviews, resetStore,
+  }), [reviews, setReviews, products, activeProducts, setProducts, getProduct, getBySlug, upsertProduct, deleteProduct, categories, setCategories, recipes, setRecipes, coupons, setCoupons, banners, setBanners, announcements, setAnnouncements, homeContent, setHomeContent, settings, setSettings, resetStore]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

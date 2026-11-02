@@ -11,7 +11,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 export default function ReviewsPage() {
   const { t, l } = useLocalized();
   const { activeProducts } = useStore();
-  const { all, add, avg, count } = useCustomerReviews();
+  const { all, add, avg, count, hasSamples } = useCustomerReviews();
   const [open, setOpen] = useState(false);
   const [stars, setStars] = useState(0);
   const [product, setProduct] = useState('');
@@ -45,7 +45,7 @@ export default function ReviewsPage() {
               ))}
             </ul>
           </div>
-          <DemoNotice text={t('reviewsWall.sampleNote')} />
+          {hasSamples && <DemoNotice text={t('reviewsWall.sampleNote')} />}
         </aside>
 
         <div className="wa-wall min-w-0 overflow-clip rounded-[28px] border border-black/5 shadow-lift">

@@ -19,8 +19,8 @@ export default function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ErrorBoundary>
-        <ThemeProvider>
         <StoreProvider>
+        <ThemeProvider>
           <UIProvider>
             <AuthProvider>
               <OrderProvider>
@@ -36,8 +36,8 @@ export default function App() {
               </OrderProvider>
             </AuthProvider>
           </UIProvider>
-        </StoreProvider>
         </ThemeProvider>
+        </StoreProvider>
       </ErrorBoundary>
     </Router>
   );

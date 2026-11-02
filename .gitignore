@@ -2,3 +2,7 @@ node_modules
 dist
 
 preview-build
+*.zip
+.DS_Store
+.env
+.env.*

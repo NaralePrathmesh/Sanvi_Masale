@@ -8,11 +8,13 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { validate, validators } from '@/utils/validation';
 import { brand } from '@/config/brand';
+import { useContact } from '@/hooks/useContact';
 
 const empty = { name: '', email: '', mobile: '', subject: '', message: '' };
 
 /** Contact: details on the left, compact form on the right. FAQs live on /faq. */
 export default function ContactPage() {
+  const contact = useContact();
   const { t } = useLocalized();
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState({});
@@ -39,11 +41,11 @@ export default function ContactPage() {
           <div>
             <h2 className="text-lg">{t('contact.supportTitle')}</h2>
             <ul className="mt-4 space-y-3.5 text-sm text-charcoal-600">
-              <Row icon={Phone}><span className="select-all">{brand.contact.phone}</span></Row>
-              <Row icon={MessageCircle}>WhatsApp <span className="select-all">{brand.contact.whatsapp}</span></Row>
-              <Row icon={Mail}><span className="select-all break-all">{brand.contact.email}</span></Row>
+              <Row icon={Phone}><span className="select-all">{contact.phone}</span></Row>
+              <Row icon={MessageCircle}>WhatsApp <span className="select-all">{contact.whatsapp}</span></Row>
+              <Row icon={Mail}><span className="select-all break-all">{contact.email}</span></Row>
               <Row icon={Clock}>{t('contact.hours')}: {brand.contact.hours}</Row>
-              <Row icon={MapPin}>{brand.contact.address}</Row>
+              <Row icon={MapPin}>{contact.address}</Row>
             </ul>
           </div>
           <div className="border-t border-line pt-8">

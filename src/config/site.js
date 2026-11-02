@@ -6,6 +6,11 @@ export const defaultSettings = {
   storeName: 'सान्वी मसाले',
   supportEmail: 'care@saanvimasale.example',
   supportPhone: '+91 98765 43210',
+  whatsapp: '+91 98765 43210',          // used by the floating WhatsApp button + Contact page
+  address: 'Plot 12, Spice Park MIDC, Pune, Maharashtra 411019 (placeholder)',
+  defaultTheme: 'classic',              // classic | noir | fresh (admin → Settings → Appearance)
+  allowThemePicker: true,               // let visitors switch theme from the header
+  lowStockThreshold: 20,                // units per pack; used by admin inventory alerts
   gstin: '27AAAAA0000A1Z5 (placeholder)',
   currency: 'INR',
   defaultLanguage: 'en',

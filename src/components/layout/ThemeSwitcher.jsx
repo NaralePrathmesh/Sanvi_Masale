@@ -15,11 +15,12 @@ const Swatch = ({ colors, big }) => (
 /** Header palette button + popover, or `inline` cards for the mobile menu. */
 export default function ThemeSwitcher({ variant = 'dropdown' }) {
   const { t } = useLocalized();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, pickerEnabled } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useClickOutside(ref, () => setOpen(false), open);
   const current = themes.find((x) => x.id === theme);
+  if (!pickerEnabled) return null;
 
   const options = (onPick) => themes.map((x) => (
     <button key={x.id} type="button" role="radio" aria-checked={theme === x.id} onClick={() => { setTheme(x.id); onPick?.(); }}

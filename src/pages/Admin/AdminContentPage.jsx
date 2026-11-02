@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Plus, Trash2, Upload, X, ArrowUp, ArrowDown } from 'lucide-react';
-import { Panel, Toggle, I18nInput, readImage } from '@/components/admin/ui';
+import { Panel, Toggle, I18nInput, readImage, PageHeader, Segmented } from '@/components/admin/ui';
+import { useStagger } from '@/components/admin/motion';
+import { photo } from '@/assets/images';
 import SmartImage from '@/components/common/SmartImage';
 import { useStore } from '@/context/StoreContext';
 import { useUI } from '@/context/UIContext';
@@ -14,22 +16,24 @@ export default function AdminContentPage() {
   const { toast } = useUI();
   const [tab, setTab] = useState('banners');
   useDocumentTitle('Admin · Content');
+  const ref = useStagger([tab]);
   const setBanner = (id, patch) => setBanners(banners.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   const move = (i, d) => { const a = [...banners]; [a[i], a[i + d]] = [a[i + d], a[i]]; setBanners(a); };
 
   return (
-    <div className="space-y-6">
-      <div className="scrollbar-none flex gap-2 overflow-x-auto">{[['banners', 'Homepage banners'], ['announce', 'Announcement bar'], ['featured', 'Featured products'], ['sections', 'Promotional sections'], ['recipes', 'Recipes']].map(([k, l]) => <button key={k} type="button" onClick={() => setTab(k)} className={`chip shrink-0 ${tab === k ? 'chip-active' : ''}`}>{l}</button>)}</div>
+    <div ref={ref} className="space-y-6">
+      <PageHeader title="Content" subtitle="Everything customers see on the homepage. Changes go live instantly." />
+      <div data-anim><Segmented id="ctab" value={tab} onChange={setTab} options={[['banners', 'Hero banners'], ['announce', 'Announcement bar'], ['featured', 'Featured products'], ['sections', 'Homepage sections'], ['recipes', 'Recipes']]} /></div>
 
       {tab === 'banners' && (
-        <Panel title="Hero banners" action={<button type="button" className="btn-primary btn-sm" onClick={() => setBanners([...banners, { id: `b${Date.now()}`, active: true, image: null, art: 'bowls', link: '/shop', eyebrow: { en: 'New' }, title: { en: 'New banner' }, subtitle: { en: '' } }])}><Plus size={14} />Add banner</button>}>
+        <Panel title="Hero banners" subtitle="The first active banner is shown as the homepage hero (1920 × 650 image recommended)." action={<button type="button" className="btn-primary btn-sm" onClick={() => setBanners([...banners, { id: `b${Date.now()}`, active: true, image: null, art: 'bowls', link: '/shop', eyebrow: { en: 'New' }, title: { en: 'New banner' }, subtitle: { en: '' } }])}><Plus size={14} />Add banner</button>}>
           <div className="space-y-5">
             {banners.map((b, i) => (
-              <div key={b.id} className="grid gap-4 rounded-2xl border border-charcoal/10 p-4 lg:grid-cols-[260px_1fr]">
+              <div key={b.id} className="grid gap-4 rounded-2xl border border-charcoal/10 p-4 lg:grid-cols-[340px_1fr]">
                 <div>
-                  <div className="relative overflow-hidden rounded-xl"><SmartImage src={b.image} photo={`hero/${b.id}`} art={b.art} alt="" className="aspect-video w-full" /><span className="absolute bottom-2 left-2 right-2 truncate rounded bg-charcoal/70 px-2 py-1 text-xs font-semibold text-white">{b.title.en}</span></div>
+                  <div className="relative overflow-hidden rounded-xl">{b.image || photo(`hero/${b.id}`) ? <img src={b.image || photo(`hero/${b.id}`).src} alt="" className="aspect-[1920/650] w-full object-cover" /> : <SmartImage art={b.art} alt="" className="aspect-[1920/650] w-full" />}<span className="absolute bottom-2 left-2 right-2 truncate rounded bg-charcoal/70 px-2 py-1 text-xs font-semibold text-white">{b.title.en}</span></div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <label className="btn-outline btn-sm cursor-pointer"><Upload size={13} />Image<input type="file" accept="image/*" className="sr-only" onChange={async (e) => { try { setBanner(b.id, { image: await readImage(e.target.files?.[0], 900) }); toast('Banner image updated'); } catch (err) { toast(err.message, 'error'); } e.target.value = ''; }} /></label>
+                    <label className="btn-outline btn-sm cursor-pointer"><Upload size={13} />Replace image<input type="file" accept="image/*" className="sr-only" onChange={async (e) => { try { setBanner(b.id, { image: await readImage(e.target.files?.[0], 900) }); toast('Banner image updated'); } catch (err) { toast(err.message, 'error'); } e.target.value = ''; }} /></label>
                     {b.image && <button type="button" className="btn-ghost btn-sm" onClick={() => setBanner(b.id, { image: null })}><X size={13} />Remove</button>}
                     <select className="h-9 rounded-full border border-charcoal/15 px-2 text-xs" value={b.art} onChange={(e) => setBanner(b.id, { art: e.target.value })} aria-label="Placeholder art">{ARTS.map((a) => <option key={a}>{a}</option>)}</select>
                   </div>

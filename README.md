@@ -30,10 +30,30 @@ Demo coupons: `WELCOME10`, `SPICE20` (min ₹799), `FESTIVE15` (min ₹499), `FL
 Demo serviceable PINs: any PIN starting with 411, 400, 110, 560, 600 … (see `src/config/site.js`). Try `999999` to see the "not serviceable" state.
 Demo order IDs for tracking: `RR260001` – `RR260009`.
 
-Reset everything: Account → Settings → "Reset all demo data", or Admin → Settings → "Reset store demo data".
+Reset everything: Account → Settings → "Reset all demo data", or Admin → Settings → Data & backup → "Reset store data".
+
+## Admin panel (`/admin`)
+
+A premium admin studio built with **GSAP** (number count-ups, staggered entrances, sparkline drawing, login backdrop) and **Framer Motion** (page transitions, slide-over drawers, shared-layout pills, list/board animations, drag feedback). Everything you change is applied to the storefront instantly.
+
+| Section | What you can do |
+|---|---|
+| Dashboard | Revenue/orders/AOV KPIs with trends, revenue chart, orders-by-status donut, top sellers, stock alerts, latest reviews, recent orders |
+| Products | Grid/table views, filters (live/hidden/low/out of stock), bulk show/hide/bestseller/delete, duplicate, tabbed editor (3-language name & description, pack sizes/prices/MRP/stock, images, badges), categories |
+| Inventory | Stock per pack size with inline +/-, quick restock (+10/+50/+100), restock-all-low, low-stock threshold |
+| Orders | Drag-and-drop status board or list, order drawer with status stepper, call/WhatsApp the customer, printable invoice, cancel |
+| Customers | VIP / repeat / new segments, lifetime value, order history, email/WhatsApp |
+| Coupons | Ticket-style cards, create/edit/pause/delete, live/scheduled/expired states |
+| Content | Hero banners (image upload), announcement bar, featured products, homepage section toggles, recipes |
+| Reviews | Hide/show, pin to top, edit, delete, add real customer reviews, remove all sample reviews |
+| Settings | Store info, **calling & WhatsApp numbers** (used by the floating buttons), delivery charges, **default website theme** + visitor theme picker, backup download/restore, reset |
+
+Extras: ⌘K / Ctrl+K command palette (jump to pages, products, orders, customers, quick actions), notifications bell (new orders, low stock, new reviews), collapsible sidebar, fully responsive.
+
+> DEMO: admin data lives in this browser's localStorage. Use Settings → Data & backup to download a backup. Real accounts, roles and a database arrive with the Phase 2 backend.
 
 ## Tech stack
-React 18 · Vite 5 · Tailwind CSS 3 · React Router 6 · Context API · i18next / react-i18next · Lucide icons · Recharts (admin charts only).
+React 18 · Vite 5 · Tailwind CSS 3 · React Router 6 · Context API · i18next / react-i18next · Lucide icons · Recharts, GSAP 3 and Framer Motion 11 (admin panel only — loaded lazily, never in the storefront bundle).
 No backend, database, payment gateway, OTP or courier integration.
 
 ## Where to change things (replace demo content)

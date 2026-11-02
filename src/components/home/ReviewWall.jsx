@@ -44,7 +44,7 @@ function scatter(n, seed) {
 export default function ReviewWall() {
   const { t, l } = useLocalized();
   const { activeProducts } = useStore();
-  const { all, add, avg, count } = useCustomerReviews();
+  const { all, add, avg, count, hasSamples } = useCustomerReviews();
   const [open, setOpen] = useState(false);
   const [seed, setSeed] = useState(7);
   const [hint, setHint] = useState(true);
@@ -203,7 +203,7 @@ export default function ReviewWall() {
             </div>
           )}
         </div>
-        <DemoNotice text={t('reviewsWall.sampleNote')} className="mx-auto mt-5 max-w-2xl" />
+        {hasSamples && <DemoNotice text={t('reviewsWall.sampleNote')} className="mx-auto mt-5 max-w-2xl" />}
       </div>
       <WriteReviewModal open={open} onClose={() => setOpen(false)} onSubmit={add} />
     </section>

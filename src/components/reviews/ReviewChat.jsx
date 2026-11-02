@@ -8,7 +8,6 @@ import { useStore } from '@/context/StoreContext';
 import { useUI } from '@/context/UIContext';
 import { useLocalized } from '@/hooks/useLocalized';
 import { usePersistentState } from '@/hooks/usePersistentState';
-import { customerReviews } from '@/data/customerReviews';
 
 /* WhatsApp group-chat name colours (readable on white). */
 const NAME_COLORS = ['#D2161E', '#1F7AEC', '#0A8754', '#B4562B', '#8E44AD', '#C2185B', '#00838F', '#6D4C41', '#5E9C2C', '#E67E22'];
@@ -16,13 +15,27 @@ const AVATAR_BG = ['#FDEEEF', '#E8F1FD', '#E6F5EE', '#FBEFE6', '#F3EAF8', '#FCE7
 const hash = (s) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const initials = (n) => n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
-/** Sample reviews + the visitor's own (saved in this browser), newest of the visitor's first. */
+/**
+ * Reviews come from the store (admin → Reviews can hide, pin or add them). The visitor's
+ * own submissions are remembered by id so they show as "You". Order: visitor's own,
+ * then pinned, then the rest.
+ */
 export function useCustomerReviews() {
-  const [mine, setMine] = usePersistentState('userReviews', []);
-  const all = useMemo(() => [...mine.map((r) => ({ ...r, mine: true })), ...customerReviews], [mine]);
-  const add = (r) => setMine((m) => [{ ...r, id: `u${Date.now()}` }, ...m].slice(0, 20));
+  const { reviews, setReviews } = useStore();
+  const [mineIds, setMineIds] = usePersistentState('myReviewIds', []);
+  const all = useMemo(() => {
+    const visible = reviews.filter((r) => !r.hidden).map((r) => (mineIds.includes(r.id) ? { ...r, mine: true } : r));
+    const rank = (r) => (r.mine ? 0 : r.pinned ? 1 : 2);
+    return visible.map((r, i) => [r, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([r]) => r);
+  }, [reviews, mineIds]);
+  const add = (r) => {
+    const id = `u${Date.now()}`;
+    setReviews((list) => [{ ...r, id, source: 'customer', createdAt: new Date().toISOString() }, ...list]);
+    setMineIds((m) => [id, ...m].slice(0, 20));
+  };
   const avg = all.reduce((s, r) => s + r.rating, 0) / (all.length || 1);
-  return { all, mine, add, avg, count: all.length };
+  const hasSamples = all.some((r) => /^r\d+$/.test(r.id) && !r.source);
+  return { all, add, avg, count: all.length, hasSamples };
 }
 
 /** One WhatsApp-style message bubble. */

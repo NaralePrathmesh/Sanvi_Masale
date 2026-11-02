@@ -39,6 +39,8 @@ const Policy = lazy(() => import('@/pages/Legal/PolicyPage'));
 const NotFound = lazy(() => import('@/pages/NotFound/NotFoundPage'));
 
 const AdminLayout = lazy(() => import('@/components/admin/AdminLayout'));
+const AdminInventory = lazy(() => import('@/pages/Admin/AdminInventoryPage'));
+const AdminReviews = lazy(() => import('@/pages/Admin/AdminReviewsPage'));
 const AdminLogin = lazy(() => import('@/pages/Admin/AdminLoginPage'));
 const AdminOverview = lazy(() => import('@/pages/Admin/AdminOverviewPage'));
 const AdminProducts = lazy(() => import('@/pages/Admin/AdminProductsPage'));
@@ -102,10 +104,12 @@ export default function AppRoutes() {
         <Route path="admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
           <Route index element={<AdminOverview />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="inventory" element={<AdminInventory />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="coupons" element={<AdminCoupons />} />
           <Route path="content" element={<AdminContent />} />
+          <Route path="reviews" element={<AdminReviews />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>
