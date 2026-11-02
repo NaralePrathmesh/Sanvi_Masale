@@ -1,0 +1,88 @@
+/**
+ * SITE THEMES — chosen by the visitor (header → palette icon) and stored in localStorage.
+ * Values are space-separated RGB so Tailwind opacity modifiers work (bg-chilli/10).
+ * Token names are historical: `chilli` = primary, `turmeric` = accent/stars, `cream` = page
+ * background, `leaf` = success, `charcoal` = text, `line` = borders, `bar` = announcement bar.
+ *
+ *  classic — Saanvi Red: the logo's red + green on warm cream (default)
+ *  noir    — Minimal Noir: black & white, sans-serif headings (fashion/lifestyle-store look)
+ *  fresh   — Fresh Leaf: deep green on soft mint-white (organic/grocery-store look)
+ */
+:root, [data-theme="classic"] {
+  --chilli: 210 22 30;
+  --chilli-50: 253 238 239;
+  --chilli-100: 249 212 214;
+  --chilli-700: 176 18 25;
+  --chilli-800: 140 14 20;
+  --chilli-deep: 224 54 47;
+  --turmeric: 240 168 48;
+  --turmeric-50: 255 248 234;
+  --turmeric-100: 253 237 203;
+  --turmeric-700: 199 133 26;
+  --cream: 255 252 247;
+  --cream-200: 255 246 233;
+  --cream-300: 243 233 218;
+  --leaf: 94 156 44;
+  --leaf-50: 241 248 234;
+  --leaf-100: 221 239 203;
+  --leaf-700: 74 125 34;
+  --charcoal: 42 37 33;
+  --charcoal-400: 160 151 142;
+  --charcoal-500: 123 115 107;
+  --charcoal-600: 75 69 64;
+  --line: 241 232 218;
+  --bar: 94 156 44;
+  --font-display: 'Fraunces', 'Noto Serif Devanagari';
+}
+[data-theme="noir"] {
+  --chilli: 17 17 17;
+  --chilli-50: 243 243 243;
+  --chilli-100: 228 228 228;
+  --chilli-700: 0 0 0;
+  --chilli-800: 0 0 0;
+  --chilli-deep: 58 58 58;
+  --turmeric: 227 160 8;
+  --turmeric-50: 251 246 232;
+  --turmeric-100: 244 230 192;
+  --turmeric-700: 156 111 7;
+  --cream: 255 255 255;
+  --cream-200: 245 245 244;
+  --cream-300: 233 233 231;
+  --leaf: 31 122 77;
+  --leaf-50: 237 246 240;
+  --leaf-100: 210 234 219;
+  --leaf-700: 23 96 60;
+  --charcoal: 17 17 17;
+  --charcoal-400: 155 155 155;
+  --charcoal-500: 110 110 110;
+  --charcoal-600: 59 59 59;
+  --line: 236 236 236;
+  --bar: 17 17 17;
+  --font-display: 'Manrope', 'Noto Sans Devanagari';
+}
+[data-theme="fresh"] {
+  --chilli: 30 123 74;
+  --chilli-50: 234 246 239;
+  --chilli-100: 207 235 219;
+  --chilli-700: 23 102 60;
+  --chilli-800: 16 77 45;
+  --chilli-deep: 46 154 95;
+  --turmeric: 242 169 59;
+  --turmeric-50: 255 248 234;
+  --turmeric-100: 253 235 200;
+  --turmeric-700: 185 122 18;
+  --cream: 250 252 248;
+  --cream-200: 241 247 238;
+  --cream-300: 225 236 219;
+  --leaf: 63 143 58;
+  --leaf-50: 238 247 236;
+  --leaf-100: 214 236 210;
+  --leaf-700: 47 111 43;
+  --charcoal: 28 38 32;
+  --charcoal-400: 147 160 152;
+  --charcoal-500: 102 117 108;
+  --charcoal-600: 59 72 64;
+  --line: 227 236 223;
+  --bar: 20 83 45;
+  --font-display: 'Fraunces', 'Noto Serif Devanagari';
+}

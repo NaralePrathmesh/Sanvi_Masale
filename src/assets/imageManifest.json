@@ -1,0 +1,960 @@
+{
+  "categories/blended-masalas": {
+    "file": "categories/blended-masalas.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/blended-masalas-800.webp"
+      }
+    ]
+  },
+  "categories/combo-packs": {
+    "file": "categories/combo-packs.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/combo-packs-800.webp"
+      }
+    ]
+  },
+  "categories/instant-mixes": {
+    "file": "categories/instant-mixes.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/instant-mixes-800.webp"
+      }
+    ]
+  },
+  "categories/maharashtrian": {
+    "file": "categories/maharashtrian.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/maharashtrian-800.webp"
+      }
+    ]
+  },
+  "categories/north-indian": {
+    "file": "categories/north-indian.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/north-indian-800.webp"
+      }
+    ]
+  },
+  "categories/pure-spices": {
+    "file": "categories/pure-spices.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/pure-spices-800.webp"
+      }
+    ]
+  },
+  "categories/ready-to-cook": {
+    "file": "categories/ready-to-cook.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/ready-to-cook-800.webp"
+      }
+    ]
+  },
+  "categories/south-indian": {
+    "file": "categories/south-indian.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "categories/south-indian-800.webp"
+      }
+    ]
+  },
+  "collections/blended-masalas": {
+    "file": "collections/blended-masalas.webp",
+    "variants": [
+      {
+        "w": 1200,
+        "file": "collections/blended-masalas-1200.webp"
+      }
+    ]
+  },
+  "collections/maharashtrian": {
+    "file": "collections/maharashtrian.webp",
+    "variants": [
+      {
+        "w": 1200,
+        "file": "collections/maharashtrian-1200.webp"
+      }
+    ]
+  },
+  "collections/pure-spices": {
+    "file": "collections/pure-spices.webp",
+    "variants": [
+      {
+        "w": 1200,
+        "file": "collections/pure-spices-1200.webp"
+      }
+    ]
+  },
+  "festivals/diwali": {
+    "file": "festivals/diwali.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "festivals/diwali-800.webp"
+      }
+    ]
+  },
+  "festivals/ganesh": {
+    "file": "festivals/ganesh.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "festivals/ganesh-800.webp"
+      }
+    ]
+  },
+  "festivals/gudipadwa": {
+    "file": "festivals/gudipadwa.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "festivals/gudipadwa-800.webp"
+      }
+    ]
+  },
+  "festivals/holi": {
+    "file": "festivals/holi.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "festivals/holi-800.webp"
+      }
+    ]
+  },
+  "festivals/navratri": {
+    "file": "festivals/navratri.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "festivals/navratri-800.webp"
+      }
+    ]
+  },
+  "hero/accent-cardamom": {
+    "file": "hero/accent-cardamom.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "hero/accent-cardamom-800.webp"
+      }
+    ]
+  },
+  "hero/accent-chilli": {
+    "file": "hero/accent-chilli.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "hero/accent-chilli-800.webp"
+      }
+    ]
+  },
+  "hero/accent-turmeric": {
+    "file": "hero/accent-turmeric.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "hero/accent-turmeric-800.webp"
+      }
+    ]
+  },
+  "hero/b1": {
+    "file": "hero/b1.webp",
+    "variants": [
+      {
+        "w": 1200,
+        "file": "hero/b1-1200.webp"
+      }
+    ]
+  },
+  "hero/b1-mobile": {
+    "file": "hero/b1-mobile.webp",
+    "variants": []
+  },
+  "hero/b2": {
+    "file": "hero/b2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "hero/b2-800.webp"
+      }
+    ]
+  },
+  "hero/b3": {
+    "file": "hero/b3.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "hero/b3-800.webp"
+      }
+    ]
+  },
+  "instagram/1": {
+    "file": "instagram/1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "instagram/1-800.webp"
+      }
+    ]
+  },
+  "instagram/2": {
+    "file": "instagram/2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "instagram/2-800.webp"
+      }
+    ]
+  },
+  "instagram/3": {
+    "file": "instagram/3.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "instagram/3-800.webp"
+      }
+    ]
+  },
+  "instagram/4": {
+    "file": "instagram/4.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "instagram/4-800.webp"
+      }
+    ]
+  },
+  "instagram/5": {
+    "file": "instagram/5.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "instagram/5-800.webp"
+      }
+    ]
+  },
+  "instagram/6": {
+    "file": "instagram/6.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "instagram/6-800.webp"
+      }
+    ]
+  },
+  "journal/diwali-faral-spices": {
+    "file": "journal/diwali-faral-spices.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "journal/diwali-faral-spices-800.webp"
+      }
+    ]
+  },
+  "journal/goda-masala-story": {
+    "file": "journal/goda-masala-story.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "journal/goda-masala-story-800.webp"
+      }
+    ]
+  },
+  "journal/how-to-store-spices": {
+    "file": "journal/how-to-store-spices.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "journal/how-to-store-spices-800.webp"
+      }
+    ]
+  },
+  "journal/kashmiri-vs-guntur-chilli": {
+    "file": "journal/kashmiri-vs-guntur-chilli.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "journal/kashmiri-vs-guntur-chilli-800.webp"
+      }
+    ]
+  },
+  "pages/about-hero": {
+    "file": "pages/about-hero.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/about-hero-800.webp"
+      }
+    ]
+  },
+  "pages/about-story": {
+    "file": "pages/about-story.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/about-story-800.webp"
+      }
+    ]
+  },
+  "pages/bulk-orders": {
+    "file": "pages/bulk-orders.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/bulk-orders-800.webp"
+      }
+    ]
+  },
+  "pages/contact": {
+    "file": "pages/contact.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/contact-800.webp"
+      }
+    ]
+  },
+  "pages/gift-boxes": {
+    "file": "pages/gift-boxes.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/gift-boxes-800.webp"
+      }
+    ]
+  },
+  "pages/heritage": {
+    "file": "pages/heritage.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/heritage-800.webp"
+      }
+    ]
+  },
+  "pages/login": {
+    "file": "pages/login.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/login-800.webp"
+      }
+    ]
+  },
+  "pages/manufacturing": {
+    "file": "pages/manufacturing.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/manufacturing-800.webp"
+      }
+    ]
+  },
+  "pages/store": {
+    "file": "pages/store.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "pages/store-800.webp"
+      }
+    ]
+  },
+  "products/amchur-powder-1": {
+    "file": "products/amchur-powder-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/amchur-powder-1-800.webp"
+      }
+    ]
+  },
+  "products/biryani-masala-1": {
+    "file": "products/biryani-masala-1.webp",
+    "variants": []
+  },
+  "products/biryani-masala-2": {
+    "file": "products/biryani-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/biryani-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/black-pepper-powder-1": {
+    "file": "products/black-pepper-powder-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/black-pepper-powder-1-800.webp"
+      }
+    ]
+  },
+  "products/byadgi-mirchi-powder-1": {
+    "file": "products/byadgi-mirchi-powder-1.webp",
+    "variants": []
+  },
+  "products/chaat-masala-1": {
+    "file": "products/chaat-masala-1.webp",
+    "variants": []
+  },
+  "products/chaat-masala-2": {
+    "file": "products/chaat-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/chaat-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/chai-masala-1": {
+    "file": "products/chai-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/chai-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/chettinad-masala-1": {
+    "file": "products/chettinad-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/chettinad-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/chicken-masala-1": {
+    "file": "products/chicken-masala-1.webp",
+    "variants": []
+  },
+  "products/chicken-masala-2": {
+    "file": "products/chicken-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/chicken-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/chole-masala-1": {
+    "file": "products/chole-masala-1.webp",
+    "variants": []
+  },
+  "products/chole-masala-2": {
+    "file": "products/chole-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/chole-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/coriander-powder-1": {
+    "file": "products/coriander-powder-1.webp",
+    "variants": []
+  },
+  "products/coriander-powder-2": {
+    "file": "products/coriander-powder-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/coriander-powder-2-800.webp"
+      }
+    ]
+  },
+  "products/cumin-powder-1": {
+    "file": "products/cumin-powder-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/cumin-powder-1-800.webp"
+      }
+    ]
+  },
+  "products/dal-makhani-masala-1": {
+    "file": "products/dal-makhani-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/dal-makhani-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/dry-ginger-powder-1": {
+    "file": "products/dry-ginger-powder-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/dry-ginger-powder-1-800.webp"
+      }
+    ]
+  },
+  "products/everyday-pure-spices-combo-1": {
+    "file": "products/everyday-pure-spices-combo-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/everyday-pure-spices-combo-1-800.webp"
+      }
+    ]
+  },
+  "products/festive-gift-box-1": {
+    "file": "products/festive-gift-box-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/festive-gift-box-1-800.webp"
+      }
+    ]
+  },
+  "products/garam-masala-1": {
+    "file": "products/garam-masala-1.webp",
+    "variants": []
+  },
+  "products/garam-masala-2": {
+    "file": "products/garam-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/garam-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/goda-masala-1": {
+    "file": "products/goda-masala-1.webp",
+    "variants": []
+  },
+  "products/goda-masala-2": {
+    "file": "products/goda-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/goda-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/green-cardamom-1": {
+    "file": "products/green-cardamom-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/green-cardamom-1-800.webp"
+      }
+    ]
+  },
+  "products/instant-sambhar-mix-1": {
+    "file": "products/instant-sambhar-mix-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/instant-sambhar-mix-1-800.webp"
+      }
+    ]
+  },
+  "products/jaljeera-mix-1": {
+    "file": "products/jaljeera-mix-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/jaljeera-mix-1-800.webp"
+      }
+    ]
+  },
+  "products/kala-masala-1": {
+    "file": "products/kala-masala-1.webp",
+    "variants": []
+  },
+  "products/kala-masala-2": {
+    "file": "products/kala-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/kala-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/kanda-lasun-masala-1": {
+    "file": "products/kanda-lasun-masala-1.webp",
+    "variants": []
+  },
+  "products/kanda-lasun-masala-2": {
+    "file": "products/kanda-lasun-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/kanda-lasun-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/kashmiri-chilli-powder-1": {
+    "file": "products/kashmiri-chilli-powder-1.webp",
+    "variants": []
+  },
+  "products/kashmiri-chilli-powder-2": {
+    "file": "products/kashmiri-chilli-powder-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/kashmiri-chilli-powder-2-800.webp"
+      }
+    ]
+  },
+  "products/kitchen-king-masala-1": {
+    "file": "products/kitchen-king-masala-1.webp",
+    "variants": []
+  },
+  "products/kitchen-king-masala-2": {
+    "file": "products/kitchen-king-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/kitchen-king-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/kolhapuri-masala-1": {
+    "file": "products/kolhapuri-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/kolhapuri-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/maharashtrian-kitchen-combo-1": {
+    "file": "products/maharashtrian-kitchen-combo-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/maharashtrian-kitchen-combo-1-800.webp"
+      }
+    ]
+  },
+  "products/malvani-masala-1": {
+    "file": "products/malvani-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/malvani-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/misal-masala-1": {
+    "file": "products/misal-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/misal-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/misal-ready-to-cook-kit-1": {
+    "file": "products/misal-ready-to-cook-kit-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/misal-ready-to-cook-kit-1-800.webp"
+      }
+    ]
+  },
+  "products/mutton-masala-1": {
+    "file": "products/mutton-masala-1.webp",
+    "variants": []
+  },
+  "products/mutton-masala-2": {
+    "file": "products/mutton-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/mutton-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/north-indian-essentials-combo-1": {
+    "file": "products/north-indian-essentials-combo-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/north-indian-essentials-combo-1-800.webp"
+      }
+    ]
+  },
+  "products/paneer-butter-masala-mix-1": {
+    "file": "products/paneer-butter-masala-mix-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/paneer-butter-masala-mix-1-800.webp"
+      }
+    ]
+  },
+  "products/paneer-masala-1": {
+    "file": "products/paneer-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/paneer-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/pani-puri-masala-1": {
+    "file": "products/pani-puri-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/pani-puri-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/pav-bhaji-masala-1": {
+    "file": "products/pav-bhaji-masala-1.webp",
+    "variants": []
+  },
+  "products/pav-bhaji-masala-2": {
+    "file": "products/pav-bhaji-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/pav-bhaji-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/rajma-masala-1": {
+    "file": "products/rajma-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/rajma-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/rasam-powder-1": {
+    "file": "products/rasam-powder-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/rasam-powder-1-800.webp"
+      }
+    ]
+  },
+  "products/red-chilli-powder-1": {
+    "file": "products/red-chilli-powder-1.webp",
+    "variants": []
+  },
+  "products/red-chilli-powder-2": {
+    "file": "products/red-chilli-powder-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/red-chilli-powder-2-800.webp"
+      }
+    ]
+  },
+  "products/sabzi-masala-1": {
+    "file": "products/sabzi-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/sabzi-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/sambhar-masala-1": {
+    "file": "products/sambhar-masala-1.webp",
+    "variants": []
+  },
+  "products/sambhar-masala-2": {
+    "file": "products/sambhar-masala-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/sambhar-masala-2-800.webp"
+      }
+    ]
+  },
+  "products/swad-chilli-powder-1": {
+    "file": "products/swad-chilli-powder-1.webp",
+    "variants": []
+  },
+  "products/tandoori-masala-1": {
+    "file": "products/tandoori-masala-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/tandoori-masala-1-800.webp"
+      }
+    ]
+  },
+  "products/turmeric-powder-1": {
+    "file": "products/turmeric-powder-1.webp",
+    "variants": []
+  },
+  "products/turmeric-powder-2": {
+    "file": "products/turmeric-powder-2.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/turmeric-powder-2-800.webp"
+      }
+    ]
+  },
+  "products/whole-cumin-seeds-1": {
+    "file": "products/whole-cumin-seeds-1.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "products/whole-cumin-seeds-1-800.webp"
+      }
+    ]
+  },
+  "recipes/amritsari-chole": {
+    "file": "recipes/amritsari-chole.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/amritsari-chole-800.webp"
+      }
+    ]
+  },
+  "recipes/hyderabadi-veg-biryani": {
+    "file": "recipes/hyderabadi-veg-biryani.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/hyderabadi-veg-biryani-800.webp"
+      }
+    ]
+  },
+  "recipes/kanda-poha": {
+    "file": "recipes/kanda-poha.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/kanda-poha-800.webp"
+      }
+    ]
+  },
+  "recipes/masale-bhaat": {
+    "file": "recipes/masale-bhaat.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/masale-bhaat-800.webp"
+      }
+    ]
+  },
+  "recipes/mumbai-pav-bhaji": {
+    "file": "recipes/mumbai-pav-bhaji.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/mumbai-pav-bhaji-800.webp"
+      }
+    ]
+  },
+  "recipes/paneer-butter-masala": {
+    "file": "recipes/paneer-butter-masala.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/paneer-butter-masala-800.webp"
+      }
+    ]
+  },
+  "recipes/pepper-rasam": {
+    "file": "recipes/pepper-rasam.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/pepper-rasam-800.webp"
+      }
+    ]
+  },
+  "recipes/puneri-misal-pav": {
+    "file": "recipes/puneri-misal-pav.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/puneri-misal-pav-800.webp"
+      }
+    ]
+  },
+  "recipes/rajma-chawal": {
+    "file": "recipes/rajma-chawal.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/rajma-chawal-800.webp"
+      }
+    ]
+  },
+  "recipes/street-pani-puri": {
+    "file": "recipes/street-pani-puri.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/street-pani-puri-800.webp"
+      }
+    ]
+  },
+  "recipes/tandoori-paneer-tikka": {
+    "file": "recipes/tandoori-paneer-tikka.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/tandoori-paneer-tikka-800.webp"
+      }
+    ]
+  },
+  "recipes/udupi-sambhar": {
+    "file": "recipes/udupi-sambhar.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "recipes/udupi-sambhar-800.webp"
+      }
+    ]
+  },
+  "regions/maharashtra": {
+    "file": "regions/maharashtra.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "regions/maharashtra-800.webp"
+      }
+    ]
+  },
+  "regions/north": {
+    "file": "regions/north.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "regions/north-800.webp"
+      }
+    ]
+  },
+  "regions/south": {
+    "file": "regions/south.webp",
+    "variants": [
+      {
+        "w": 800,
+        "file": "regions/south-800.webp"
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "rasoi-ratna-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "images": "node scripts/sync-images.mjs",
+    "predev": "node scripts/sync-images.mjs && node scripts/sitemap.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/sync-images.mjs && node scripts/sitemap.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:preview": "node scripts/sync-images.mjs && vite build --config vite.preview.config.js && node scripts/inline-preview.mjs",
+    "sitemap": "node scripts/sitemap.mjs"
+  },
+  "dependencies": {
+    "i18next": "^23.16.8",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.1.3",
+    "react-router-dom": "^6.28.0",
+    "recharts": "^2.13.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.11"
+  }
+}

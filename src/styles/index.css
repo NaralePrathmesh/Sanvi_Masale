@@ -1,0 +1,115 @@
+@import './themes.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Saanvi Masale design system
+ * Palette: burgundy #762B32 (primary) · deep red #922F35 · cream #FAF7F0 · white · gold #C99A42 (sparingly)
+ *          text #282522 · secondary #77716B · border #EAE5DC
+ * Type: Fraunces (headings) + Manrope (UI/body); Noto Serif/Sans Devanagari for Hindi & Marathi.
+ */
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+  body { @apply bg-cream text-charcoal font-sans text-[15px] leading-relaxed antialiased; text-rendering: optimizeLegibility; }
+  h1, h2, h3, h4 { @apply font-display font-medium tracking-tight text-charcoal; text-wrap: balance; }
+  .lang-deva body { line-height: 1.7; }
+  .lang-deva h1, .lang-deva h2, .lang-deva h3, .lang-deva h4 { letter-spacing: 0; line-height: 1.35; @apply font-semibold; }
+  :focus-visible { @apply outline-none ring-2 ring-chilli/40 ring-offset-2 ring-offset-cream; }
+  ::selection { @apply bg-turmeric/30; }
+}
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+
+  /* Type scale */
+  .h-page { @apply text-[32px] leading-[1.15] sm:text-[40px] lg:text-[44px]; }
+  .h-section { @apply text-[26px] leading-tight sm:text-[30px] lg:text-[32px]; }
+  .h-sub { @apply text-lg sm:text-xl; }
+  .text-muted { @apply text-charcoal-500; }
+
+  /* Buttons — one primary style, one secondary, one quiet */
+  .btn { @apply relative isolate inline-flex min-h-[44px] items-center justify-center gap-2 overflow-hidden rounded-lg px-5 py-2.5 text-center text-sm font-semibold transition duration-200 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-chilli text-white hover:bg-chilli-700 hover:shadow-[0_10px_24px_-10px_rgb(var(--chilli)/.55)]; }
+  .btn-primary::after { content: ""; position: absolute; inset: 0 auto 0 -60%; width: 40%; z-index: -1; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-20deg); transition: left .7s ease; }
+  .btn-primary:hover::after { left: 130%; }
+  .btn-secondary { @apply btn bg-turmeric text-charcoal hover:bg-turmeric-700 hover:text-white; }
+  .btn-green { @apply btn-primary; }
+  .btn-outline { @apply btn border border-line bg-white text-charcoal hover:border-chilli hover:text-chilli; }
+  .btn-ghost { @apply btn text-charcoal hover:bg-charcoal/5; }
+  .btn-sm { @apply min-h-[36px] px-3.5 py-1.5 text-xs; }
+  .btn-link { @apply inline-flex items-center gap-1.5 text-sm font-semibold text-chilli underline-offset-4 hover:underline; }
+  .icon-btn { @apply inline-flex h-10 w-10 items-center justify-center rounded-full text-charcoal transition-colors hover:bg-charcoal/5 hover:text-chilli; }
+
+  /* Forms */
+  .input { @apply min-h-[44px] w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-charcoal transition placeholder:text-charcoal-400 focus:border-chilli/50 focus:outline-none focus:ring-2 focus:ring-chilli/15; }
+  .input-error { @apply border-chilli-deep focus:border-chilli-deep focus:ring-chilli-deep/15; }
+  .label { @apply mb-1.5 block text-[13px] font-medium text-charcoal-600; }
+  .field-error { @apply mt-1 text-xs font-medium text-chilli-deep; }
+
+  /* Surfaces: borders instead of heavy shadows */
+  .card { @apply rounded-xl border border-line bg-white; }
+  .badge { @apply inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide; }
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[13px] font-medium text-charcoal-600 transition hover:border-chilli hover:text-chilli; }
+  .chip-active { @apply border-chilli bg-chilli text-white hover:text-white; }
+
+  /* Rhythm */
+  .section { @apply py-16 sm:py-20 lg:py-24; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[.16em] text-chilli; }
+  .lang-deva .eyebrow { @apply tracking-normal; }
+  .link { @apply font-medium text-chilli underline-offset-4 hover:underline; }
+
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .table-wrap { @apply w-full overflow-x-auto rounded-xl border border-line bg-white; }
+  .table { @apply w-full min-w-[640px] text-left text-sm; }
+  .table th { @apply bg-cream px-4 py-3 text-xs font-semibold uppercase tracking-wide text-charcoal-500; }
+  .table td { @apply border-t border-line px-4 py-3 align-middle; }
+  .demo-pill { @apply inline-flex items-center gap-1 rounded bg-turmeric-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-turmeric-700; }
+}
+
+/* ── Motion: restrained ───────────────────────────────────── */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); transition-delay: var(--reveal-delay, 0ms); }
+.reveal.is-visible { opacity: 1; transform: none; }
+.nav-link { position: relative; }
+.nav-link::after { content: ""; position: absolute; left: .75rem; right: .75rem; bottom: .15rem; height: 1.5px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
+.nav-link:hover::after, .nav-link.active::after { transform: scaleX(1); }
+.skeleton { background: linear-gradient(90deg, rgba(40,37,34,.05) 25%, rgba(40,37,34,.1) 37%, rgba(40,37,34,.05) 63%); background-size: 800px 100%; @apply animate-shimmer rounded-lg; }
+.text-balance { text-wrap: balance; }
+.marquee-track:hover { animation-play-state: paused; }
+/* WhatsApp-style review wall */
+.wa-wall { background-color: #EFEAE2; background-image: radial-gradient(rgba(84,101,111,.07) 1.2px, transparent 1.3px), radial-gradient(rgba(84,101,111,.05) 1px, transparent 1.1px); background-size: 22px 22px, 34px 34px; background-position: 0 0, 11px 17px; }
+.wa-tail::before { content: ""; position: absolute; top: 0; width: 12px; height: 14px; }
+.wa-tail-in::before { left: -7px; background: inherit; clip-path: polygon(100% 0, 0 0, 100% 100%); }
+.wa-tail-out::before { right: -7px; background: inherit; clip-path: polygon(0 0, 100% 0, 0 100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+  .marquee-track { animation: none !important; flex-wrap: wrap; justify-content: center; width: auto; }
+}
+
+/* ── Scrollbar (brand) ───────────────────────────────────── */
+html { scrollbar-width: thin; scrollbar-color: rgb(var(--turmeric)) rgb(var(--cream-200)); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: rgb(var(--cream-200)); }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgb(var(--turmeric)), rgb(var(--chilli))); border-radius: 999px; border: 2px solid rgb(var(--cream-200)); }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgb(var(--turmeric-700)), rgb(var(--chilli-700))); }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* ── Image unveil on scroll ──────────────────────────────── */
+.reveal-img { clip-path: inset(0 0 100% 0 round 1rem); transition: clip-path 1s cubic-bezier(.65,0,.25,1); transition-delay: var(--reveal-delay, 0ms); }
+.reveal-img.is-visible { clip-path: inset(0 0 0 0 round 1rem); }
+.reveal-img img, .reveal-img svg { transform: scale(1.12); transition: transform 1.4s cubic-bezier(.2,.7,.2,1); }
+.reveal-img.is-visible img, .reveal-img.is-visible svg { transform: scale(1); }
+
+/* ── Tilt glare ──────────────────────────────────────────── */
+.tilt { transform-style: preserve-3d; will-change: transform; }
+.tilt-glare { pointer-events: none; position: absolute; inset: 0; z-index: 5; border-radius: inherit; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.35), transparent 55%); }
+.tilt:hover .tilt-glare { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-img { clip-path: none !important; }
+  .reveal-img img, .reveal-img svg { transform: none !important; }
+}
