@@ -6,12 +6,18 @@ import { StatCard, Panel, PageHeader, Segmented, Badge, OrderBadge, Empty } from
 import { Drawer, useStagger } from '@/components/admin/motion';
 import { useOrders } from '@/context/OrderContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useUI } from '@/context/UIContext';
+import { useAuth } from '@/context/AuthContext';
+import { can } from '@/config/permissions';
 import { formatINR, formatDate } from '@/utils/format';
 
 const VIP = 1000; // ₹ lifetime spend for the VIP tag (demo rule)
 
 export default function AdminCustomersPage() {
-  const { customers, orders } = useOrders();
+  const { customers, orders, setCustomerStatus, apiMode } = useOrders();
+  const { toast } = useUI();
+  const { admin } = useAuth();
+  const canBlock = can(admin?.role || 'SUPER_ADMIN', 'customers:write');
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(''); const [seg, setSeg] = useState('all');
   const [viewId, setViewId] = useState(params.get('view'));
@@ -20,10 +26,12 @@ export default function AdminCustomersPage() {
   useEffect(() => { if (params.get('view')) setParams({}, { replace: true }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = useMemo(() => customers.map((c) => {
-    const own = orders.filter((o) => o.customerId === c.id || o.customer.email === c.email);
-    const spent = own.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.totals.total, 0);
+    const own = orders.filter((o) => o.customerId === c.id || (!!c.email && o.customer?.email === c.email));
+    // API mode: lifetime totals come from the server (the order list only holds the latest 100).
+    const spent = apiMode && typeof c.spent === 'number' ? c.spent : own.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.totals.total, 0);
     const isNew = Date.now() - new Date(c.joinedAt) < 30 * 864e5;
-    return { ...c, orders: own, spent, vip: spent >= VIP, repeat: own.length > 1, isNew };
+    const count = apiMode && typeof c.orders === 'number' ? c.orders : own.length;
+    return { ...c, name: c.name || c.email || c.phone || 'Customer', orders: own, orderCount: count, spent, vip: spent >= VIP, repeat: count > 1, isNew };
   }), [customers, orders]);
   const list = rows.filter((c) => (seg === 'all' || (seg === 'vip' && c.vip) || (seg === 'repeat' && c.repeat) || (seg === 'new' && c.isNew))
     && (!q || `${c.name} ${c.email} ${c.phone} ${c.city}`.toLowerCase().includes(q.toLowerCase())));
@@ -50,7 +58,7 @@ export default function AdminCustomersPage() {
             <tbody>{list.map((c, i) => (
               <motion.tr key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 12) * 0.025 }} className="cursor-pointer" onClick={() => setViewId(c.id)}>
                 <td><div className="flex items-center gap-3"><Avatar name={c.name} /><span className="min-w-0"><span className="flex items-center gap-1.5 font-semibold">{c.name}{c.vip && <Badge tone="amber"><Crown size={10} />VIP</Badge>}{c.isNew && <Badge tone="green">New</Badge>}</span><span className="text-xs text-charcoal-400">{c.email}</span></span></div></td>
-                <td>{c.phone}</td><td>{c.city}</td><td className="whitespace-nowrap text-charcoal-500">{formatDate(c.joinedAt)}</td><td>{c.orders.length}</td><td className="font-semibold tabular-nums">{formatINR(c.spent)}</td>
+                <td>{c.phone}</td><td>{c.city}</td><td className="whitespace-nowrap text-charcoal-500">{formatDate(c.joinedAt)}</td><td>{c.orderCount}</td><td className="font-semibold tabular-nums">{formatINR(c.spent)}</td>
                 <td className="text-right"><ChevronRight size={16} className="text-charcoal-400" /></td>
               </motion.tr>
             ))}</tbody>
@@ -66,7 +74,7 @@ export default function AdminCustomersPage() {
               <div className="flex flex-wrap gap-1.5">{view.vip && <Badge tone="amber"><Crown size={10} />VIP</Badge>}{view.repeat && <Badge tone="blue">Repeat buyer</Badge>}{view.isNew && <Badge tone="green">New</Badge>}</div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              {[['Orders', view.orders.length], ['Total spent', formatINR(view.spent)], ['Avg order', formatINR(Math.round(view.spent / Math.max(1, view.orders.filter((o) => o.status !== 'cancelled').length)))]].map(([k, v]) => <div key={k} className="rounded-2xl bg-[#FAFAF8] p-4"><p className="text-xs text-charcoal-400">{k}</p><p className="mt-1 text-lg font-bold">{v}</p></div>)}
+              {[['Orders', view.orderCount], ['Total spent', formatINR(view.spent)], ['Avg order', formatINR(Math.round(view.spent / Math.max(1, view.orders.filter((o) => o.status !== 'cancelled').length)))]].map(([k, v]) => <div key={k} className="rounded-2xl bg-[#FAFAF8] p-4"><p className="text-xs text-charcoal-400">{k}</p><p className="mt-1 text-lg font-bold">{v}</p></div>)}
             </div>
             <div className="space-y-2 text-sm">
               <p className="flex items-center gap-2"><Mail size={14} className="text-charcoal-400" />{view.email}</p>
@@ -74,6 +82,7 @@ export default function AdminCustomersPage() {
               <p className="flex items-center gap-2"><MapPin size={14} className="text-charcoal-400" />{view.city || '—'}</p>
               <div className="flex gap-2 pt-2">
                 <a href={`mailto:${view.email}`} className="adm-btn-ghost h-9 px-3 text-xs"><Mail size={13} />Email</a>
+                {canBlock && view.status && <button type="button" className={`adm-btn h-9 px-3 text-xs ${view.status === 'BLOCKED' ? 'bg-leaf text-white' : 'border border-chilli/30 text-chilli hover:bg-chilli-50'}`} onClick={async () => { const next = view.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED'; try { await setCustomerStatus(view.id, next); toast(next === 'BLOCKED' ? 'Customer blocked and signed out everywhere' : 'Customer unblocked'); } catch (e) { toast(e.message, 'error'); } }}>{view.status === 'BLOCKED' ? 'Unblock' : 'Block customer'}</button>}
                 {view.phone && <a href={`https://wa.me/91${view.phone.replace(/\D/g, '').slice(-10)}`} target="_blank" rel="noopener noreferrer" className="adm-btn h-9 bg-[#25D366] px-3 text-xs text-white"><MessageCircle size={13} />WhatsApp</a>}
               </div>
             </div>

@@ -51,7 +51,8 @@ const AdminContent = lazy(() => import('@/pages/Admin/AdminContentPage'));
 const AdminSettings = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 
 function RequireAdmin({ children }) {
-  const { admin } = useAuth();
+  const { admin, ready } = useAuth();
+  if (!ready) return <PageLoader />; // wait for the session to be restored from the refresh cookie
   return admin ? children : <Navigate to="/admin/login" replace />;
 }
 

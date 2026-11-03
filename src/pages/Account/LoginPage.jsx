@@ -11,10 +11,11 @@ import { validate, validators } from '@/utils/validation';
 import { pageImages } from '@/assets/images';
 import { DEMO_CUSTOMER_LOGIN } from '@/services/mock/seed';
 import { brand } from '@/config/brand';
+import OtpLogin from '@/components/auth/OtpLogin';
 
 export default function LoginPage() {
   const { t, l } = useLocalized();
-  const { user, login, register } = useAuth();
+  const { user, login, register, mode: authMode } = useAuth();
   const { toast } = useUI();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -52,6 +53,11 @@ export default function LoginPage() {
           </div>
         </div>
         <div className="p-6 sm:p-10">
+          {authMode === 'api' ? (<>
+          <h1 className="text-2xl">{t('otp.title')}</h1>
+          <p className="mt-1 text-sm text-charcoal-500">{t('otp.subtitle')}</p>
+          <div className="mt-6"><OtpLogin onDone={(r) => { toast(r.isNew ? t('otp.welcomeNew') : t('auth.welcome', { name: (r.user.name || '').split(' ')[0] || '' })); navigate(redirect, { replace: true }); }} /></div>
+          </>) : (<>
           <div className="mb-6 grid grid-cols-2 rounded-full bg-cream p-1" role="tablist">
             {['login', 'register'].map((m) => <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setErrors({}); setAuthError(''); }} className={`rounded-full py-2.5 text-sm font-semibold transition ${mode === m ? 'bg-white text-chilli shadow-card' : 'text-charcoal-500'}`}>{m === 'login' ? t('auth.login') : t('auth.register')}</button>)}
           </div>
@@ -68,6 +74,7 @@ export default function LoginPage() {
           {mode === 'login' && <button type="button" className="btn-outline mt-3 w-full" onClick={() => { login(DEMO_CUSTOMER_LOGIN.email, DEMO_CUSTOMER_LOGIN.password); toast(t('auth.welcome', { name: 'Priya' })); navigate(redirect, { replace: true }); }}>{t('auth.useDemo')}</button>}
           <p className="mt-5 flex gap-2 rounded-xl bg-turmeric-50 p-3 text-xs text-charcoal-600"><Info size={15} className="mt-0.5 shrink-0 text-turmeric-700" /><span>{t('auth.demoHint')}<br /><strong>{t('auth.demoOnly')}</strong></span></p>
           <p className="mt-5 text-center text-sm text-charcoal-500">{mode === 'login' ? t('auth.noAccount') : t('auth.haveAccount')} <button type="button" className="link" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>{mode === 'login' ? t('auth.register') : t('auth.login')}</button></p>
+          </>)}
           <p className="mt-2 text-center"><Link to="/track-order" className="text-xs text-charcoal-400 hover:text-chilli">{t('nav.trackOrder')} →</Link></p>
         </div>
       </div>

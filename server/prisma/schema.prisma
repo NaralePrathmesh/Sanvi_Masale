@@ -1,0 +1,400 @@
+// Saanvi Masale — PostgreSQL schema (Prisma).
+// Localised text fields are JSON objects shaped { en, hi, mr } to match the frontend.
+// Money is stored in whole rupees (Int), the same unit the storefront uses.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Identity & access ──────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  STAFF
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  phone         String?    @unique // E.164, e.g. +919876543210
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  role          Role       @default(CUSTOMER)
+  status        UserStatus @default(ACTIVE)
+  passwordHash  String? // staff/admin only (argon2id); customers are passwordless (OTP)
+  tokenVersion  Int        @default(0) // bump to revoke every access token instantly
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  addresses Address[]
+  sessions  Session[]
+  orders    Order[]
+  wishlist  WishlistItem[]
+  reviews   Review[]
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+enum OtpChannel {
+  EMAIL
+  SMS
+}
+
+enum OtpPurpose {
+  LOGIN // customer sign-in / sign-up
+  LINK // add & verify a second contact on an existing account
+  ADMIN_2FA // second factor after admin password
+}
+
+model OtpChallenge {
+  id         String     @id @default(cuid())
+  channel    OtpChannel
+  identifier String // normalised email or E.164 phone
+  purpose    OtpPurpose
+  userId     String? // set for LINK and ADMIN_2FA
+  codeHash   String // HMAC-SHA256(pepper, id:code) — the code itself is never stored
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime   @default(now())
+
+  @@index([identifier, purpose, createdAt])
+  @@index([expiresAt])
+}
+
+/// Refresh-token sessions. Tokens rotate on every use; reusing an old token revokes the whole family.
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique // SHA-256 of the opaque refresh token
+  familyId    String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedBy  String?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String?
+  name      String
+  phone     String
+  house     String
+  street    String
+  area      String
+  landmark  String?
+  city      String
+  state     String
+  pin       String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Catalogue ──────────────────────────────────────────────────────
+
+model Category {
+  id        String    @id // slug, e.g. "pure-spices"
+  name      Json
+  desc      Json?
+  icon      String?
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  sku         String        @unique
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
+  type        String        @default("blend")
+  region      String        @default("pan-india")
+  color       String[]
+  name        Json
+  short       Json?
+  description Json?
+  ingredients String[]
+  dishes      String[]
+  tags        String[]
+  festivals   String[]
+  images      String[]
+  rating      Float         @default(0)
+  reviewCount Int           @default(0)
+  popularity  Int           @default(50)
+  heat        Int           @default(2)
+  bestseller  Boolean       @default(false)
+  isNew       Boolean       @default(false)
+  active      Boolean       @default(true)
+  packs       ProductPack[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([active])
+}
+
+model ProductPack {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      String // "100g", "1kg", "4 × 100g"
+  grams     Int     @default(0)
+  price     Int // ₹, selling price
+  mrp       Int // ₹, printed price
+  stock     Int     @default(0)
+  sortOrder Int     @default(0)
+
+  @@unique([productId, size])
+  @@index([stock])
+}
+
+model Recipe {
+  id         String   @id // e.g. "r01"
+  slug       String   @unique
+  active     Boolean  @default(true)
+  featured   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  data       Json // full recipe in the storefront's shape (name, desc, ingredients, steps, products …)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── Commerce ───────────────────────────────────────────────────────
+
+enum CouponType {
+  percent
+  flat
+}
+
+model Coupon {
+  code         String     @id
+  type         CouponType
+  value        Int
+  minOrder     Int        @default(0)
+  maxDiscount  Int        @default(0) // 0 = no cap
+  validFrom    String? // YYYY-MM-DD (IST calendar day, matches the storefront)
+  validTo      String?
+  active       Boolean    @default(true)
+  description  Json?
+  usageLimit   Int? // total redemptions allowed (null = unlimited)
+  perUserLimit Int? // redemptions per customer (null = unlimited)
+  usedCount    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+enum OrderStatus {
+  placed
+  confirmed
+  processing
+  shipped
+  out_for_delivery
+  delivered
+  cancelled
+}
+
+enum PaymentStatus {
+  PENDING // online payment not captured yet (gateway integration pending)
+  COD_PENDING // cash to be collected on delivery
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id             String        @id // human-friendly, e.g. "SM2611000123"
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  status         OrderStatus   @default(placed)
+  customer       Json // { name, email, phone } snapshot
+  address        Json // address snapshot
+  paymentMethod  String // cod | upi | card | netbanking
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentInfo    String?
+  deliveryMethod String        @default("standard")
+  deliveryEta    DateTime?
+  subtotal       Int
+  mrpTotal       Int
+  comboDiscount  Int           @default(0)
+  couponCode     String?
+  couponDiscount Int           @default(0)
+  deliveryCharge Int           @default(0)
+  codCharge      Int           @default(0)
+  total          Int
+  idempotencyKey String?
+  items          OrderItem[]
+  events         OrderEvent[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  productName Json
+  size        String
+  qty         Int
+  price       Int
+  mrp         Int
+  comboPct    Int     @default(0)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderEvent {
+  id       String      @id @default(cuid())
+  orderId  String
+  order    Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status   OrderStatus
+  note     String?
+  byUserId String?
+  at       DateTime    @default(now())
+
+  @@index([orderId, at])
+}
+
+model WishlistItem {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  createdAt DateTime @default(now())
+
+  @@id([userId, productId])
+}
+
+// ─── Reviews & content ──────────────────────────────────────────────
+
+enum ReviewSource {
+  SAMPLE
+  CUSTOMER
+  ADMIN
+}
+
+model Review {
+  id          String       @id @default(cuid())
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String
+  city        String?
+  productSlug String?
+  rating      Int
+  text        String
+  time        String? // display time on the WhatsApp-style bubble
+  source      ReviewSource @default(CUSTOMER)
+  hidden      Boolean      @default(false)
+  pinned      Boolean      @default(false)
+  seen        Boolean      @default(false)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([hidden, pinned])
+  @@index([createdAt])
+}
+
+/// Key/value store for site content & settings: "settings", "banners", "announcements", "homeContent".
+model ContentBlock {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum EnquiryType {
+  CONTACT
+  BULK
+}
+
+model Enquiry {
+  id        String      @id @default(cuid())
+  type      EnquiryType
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  meta      Json?
+  handled   Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@index([type, createdAt])
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  provider     String // cloudinary | supabase | local
+  key          String // public_id / object path / file name
+  url          String
+  bytes        Int?
+  width        Int?
+  height       Int?
+  format       String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String // e.g. "product.update"
+  entity    String?
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

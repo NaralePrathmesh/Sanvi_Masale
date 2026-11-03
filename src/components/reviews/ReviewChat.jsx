@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Star, CheckCheck, ShoppingBag, PenLine, Send } from 'lucide-react';
 import Modal from '@/components/common/Modal';
 import FormField from '@/components/common/FormField';
 import { RatingInput } from '@/components/common/Rating';
 import { useStore } from '@/context/StoreContext';
+import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useLocalized } from '@/hooks/useLocalized';
 import { usePersistentState } from '@/hooks/usePersistentState';
@@ -21,20 +22,21 @@ const initials = (n) => n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toU
  * then pinned, then the rest.
  */
 export function useCustomerReviews() {
-  const { reviews, setReviews } = useStore();
+  const { reviews, addReview, isSampleReview } = useStore();
   const [mineIds, setMineIds] = usePersistentState('myReviewIds', []);
   const all = useMemo(() => {
     const visible = reviews.filter((r) => !r.hidden).map((r) => (mineIds.includes(r.id) ? { ...r, mine: true } : r));
     const rank = (r) => (r.mine ? 0 : r.pinned ? 1 : 2);
     return visible.map((r, i) => [r, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([r]) => r);
   }, [reviews, mineIds]);
-  const add = (r) => {
-    const id = `u${Date.now()}`;
-    setReviews((list) => [{ ...r, id, source: 'customer', createdAt: new Date().toISOString() }, ...list]);
-    setMineIds((m) => [id, ...m].slice(0, 20));
+  /** Saves the review (API mode: server, needs a signed-in customer). Throws on failure. */
+  const add = async (r) => {
+    const saved = await addReview(r);
+    setMineIds((m) => [saved.id, ...m].slice(0, 20));
+    return saved;
   };
   const avg = all.reduce((s, r) => s + r.rating, 0) / (all.length || 1);
-  const hasSamples = all.some((r) => /^r\d+$/.test(r.id) && !r.source);
+  const hasSamples = all.some(isSampleReview);
   return { all, add, avg, count: all.length, hasSamples };
 }
 
@@ -92,8 +94,14 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialText = '' }) 
   const [err, setErr] = useState({});
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target ? e.target.value : e }));
 
-  const submit = (e) => {
+  const { user, mode: authMode } = useAuth();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const needLogin = authMode === 'api' && !user;
+
+  const submit = async (e) => {
     e.preventDefault();
+    if (needLogin) { onClose(); navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`); return; }
     const er = {};
     if (f.name.trim().length < 2) er.name = 'validation.name';
     if (!f.rating) er.rating = 'validation.rating';
@@ -102,10 +110,13 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialText = '' }) 
     if (Object.keys(er).length) return;
     const now = new Date();
     const time = now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-    onSubmit({ name: f.name.trim(), city: f.city.trim(), product: f.product, rating: f.rating, text: f.text.trim(), time });
-    toast(t('reviewsWall.thanks'), 'success');
-    setF({ name: '', city: '', product: '', rating: 0, text: '' });
-    onClose();
+    setBusy(true);
+    try {
+      await onSubmit({ name: f.name.trim(), city: f.city.trim(), product: f.product, rating: f.rating, text: f.text.trim(), time });
+      toast(t('reviewsWall.thanks'), 'success');
+      setF({ name: '', city: '', product: '', rating: 0, text: '' });
+      onClose();
+    } catch (ex) { toast(ex.message || t('common.error'), 'error'); } finally { setBusy(false); }
   };
 
   return (
@@ -126,7 +137,8 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialText = '' }) 
         </FormField>
         <FormField as="textarea" label={t('reviewsWall.message')} value={f.text} onChange={set('text')} error={err.text} maxLength={400} placeholder={t('reviewsWall.placeholder')} />
         <p className="text-xs text-charcoal-400">{t('reviewsWall.savedNote')}</p>
-        <button type="submit" className="btn-primary w-full"><Send size={15} />{t('reviewsWall.send')}</button>
+        {needLogin && <p className="rounded-xl bg-turmeric-50 px-3 py-2 text-xs text-charcoal-600">{t('reviewsWall.loginToReview')}</p>}
+        <button type="submit" className="btn-primary w-full" disabled={busy}><Send size={15} />{needLogin ? t('reviewsWall.loginAndSend') : busy ? t('common.loading') : t('reviewsWall.send')}</button>
       </form>
     </Modal>
   );

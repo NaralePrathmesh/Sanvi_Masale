@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '@/services/api/client';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { IndianRupee, ShoppingCart, Users, Receipt, Plus, Ticket, PackageX, ArrowUpRight, Star, MessageSquareHeart, Sparkles } from 'lucide-react';
@@ -14,10 +15,13 @@ import { demoMonthlySales } from '@/services/mock/seed';
 import { formatINR, formatINRCompact, formatDate } from '@/utils/format';
 
 const tip = { contentStyle: { borderRadius: 14, border: '1px solid rgba(0,0,0,.06)', boxShadow: '0 12px 30px -12px rgba(0,0,0,.25)', fontSize: 12 } };
+const aov = (m) => (m?.orders ? m.sales / m.orders : 0);
 const inr = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 export default function AdminOverviewPage() {
-  const { orders, customers } = useOrders();
+  const { orders, customers, apiMode } = useOrders();
+  const [dash, setDash] = useState(null); // API mode: server-side aggregates over ALL orders
+  useEffect(() => { if (apiMode) api('/admin/dashboard').then(setDash).catch(() => {}); }, [apiMode, orders.length]);
   const { products, getProduct, reviews, settings } = useStore();
   const { admin } = useAuth();
   const [range, setRange] = useState('6');
@@ -27,20 +31,33 @@ export default function AdminOverviewPage() {
 
   const valid = orders.filter((o) => o.status !== 'cancelled');
   const liveSales = valid.reduce((s, o) => s + o.totals.total, 0);
-  const sales = demoMonthlySales.map((m, i, a) => (i === a.length - 1 ? { ...m, sales: m.sales + liveSales, orders: m.orders + valid.length } : m));
+  const sales = useMemo(() => {
+    if (!apiMode) return demoMonthlySales.map((m, i, a) => (i === a.length - 1 ? { ...m, sales: m.sales + liveSales, orders: m.orders + valid.length } : m));
+    // Last 6 calendar months, zero-filled, from the server's monthly totals.
+    const out = [];
+    for (let i = 5; i >= 0; i -= 1) {
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
+      const month = d.toLocaleString('en-US', { month: 'short' });
+      const m = dash?.monthly?.find((x) => x.month === month);
+      out.push({ month, sales: m?.sales || 0, orders: m?.orders || 0 });
+    }
+    return out;
+  }, [apiMode, dash, liveSales, valid.length]);
   const shown = sales.slice(-Number(range));
   const cur = sales[sales.length - 1]; const prev = sales[sales.length - 2];
   const totalSales = sales.reduce((s, m) => s + m.sales, 0);
   const totalOrders = sales.reduce((s, m) => s + m.orders, 0);
   const pct = (a, b) => (b ? ((a - b) / b) * 100 : 0);
 
-  const statusData = useMemo(() => Object.keys(ORDER_LABEL).map((s) => ({ s, name: ORDER_LABEL[s], value: orders.filter((o) => o.status === s).length })).filter((d) => d.value), [orders]);
+  const statusData = useMemo(() => Object.keys(ORDER_LABEL).map((s) => ({ s, name: ORDER_LABEL[s], value: dash?.byStatus ? dash.byStatus[s] || 0 : orders.filter((o) => o.status === s).length })).filter((d) => d.value), [orders, dash]);
   const top = useMemo(() => {
-    const qty = {}; valid.forEach((o) => o.items.forEach((it) => { qty[it.productId] = (qty[it.productId] || 0) + it.qty; }));
+    const qty = {};
+    if (dash?.top) dash.top.forEach((r) => { qty[r.productId] = r.units; });
+    else valid.forEach((o) => o.items.forEach((it) => { qty[it.productId] = (qty[it.productId] || 0) + it.qty; }));
     const rows = Object.entries(qty).map(([id, q]) => ({ p: getProduct(id), q })).filter((r) => r.p).sort((a, b) => b.q - a.q).slice(0, 5);
     const max = Math.max(1, ...rows.map((r) => r.q));
     return rows.map((r) => ({ ...r, w: (r.q / max) * 100 }));
-  }, [valid, getProduct]);
+  }, [valid, getProduct, dash]);
   const low = products.flatMap((p) => p.packs.filter((x) => Number(x.stock) <= settings.lowStockThreshold).map((x) => ({ p, x }))).sort((a, b) => a.x.stock - b.x.stock).slice(0, 5);
   const latestReviews = reviews.filter((r) => !r.hidden).slice(0, 3);
   const hour = new Date().getHours();
@@ -68,8 +85,8 @@ export default function AdminOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={IndianRupee} label="Revenue (6 mo)" value={totalSales} format={(n) => formatINRCompact(n)} delta={pct(cur.sales, prev.sales)} hint="vs last month" trend={sales.map((m) => m.sales)} />
         <StatCard icon={ShoppingCart} label="Orders (6 mo)" value={totalOrders} delta={pct(cur.orders, prev.orders)} hint="vs last month" trend={sales.map((m) => m.orders)} tone="turmeric" />
-        <StatCard icon={Receipt} label="Avg order value" value={totalSales / Math.max(1, totalOrders)} format={inr} delta={pct(cur.sales / cur.orders, prev.sales / prev.orders)} hint="vs last month" trend={sales.map((m) => m.sales / m.orders)} tone="leaf" />
-        <StatCard icon={Users} label="Customers" value={customers.length} hint={<Link to="/admin/customers" className="font-semibold text-chilli hover:underline">View all</Link>} tone="charcoal" />
+        <StatCard icon={Receipt} label="Avg order value" value={totalSales / Math.max(1, totalOrders)} format={inr} delta={pct(aov(cur), aov(prev))} hint="vs last month" trend={sales.map(aov)} tone="leaf" />
+        <StatCard icon={Users} label="Customers" value={dash?.customers ?? customers.length} hint={<Link to="/admin/customers" className="font-semibold text-chilli hover:underline">View all</Link>} tone="charcoal" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">

@@ -12,7 +12,8 @@ import { formatINR, formatINRCompact } from '@/utils/format';
 
 /** Stock for every pack size: inline edit, quick restock, low/out-of-stock filters. */
 export default function AdminInventoryPage() {
-  const { products, setProducts, settings, setSettings } = useStore();
+  const { products, updateStock, restockLow, settings, saveSettings } = useStore();
+  const [threshold, setThreshold] = useState(settings.lowStockThreshold);
   const { toast } = useUI();
   const [params] = useSearchParams();
   const [filter, setFilter] = useState(params.get('filter') || 'all');
@@ -32,12 +33,20 @@ export default function AdminInventoryPage() {
     && (!q || `${r.p.name.en} ${r.p.sku} ${r.x.size}`.toLowerCase().includes(q.toLowerCase())))
     .sort((a, b) => (filter === 'all' ? 0 : a.stock - b.stock));
 
-  const setStock = (pid, i, v) => setProducts((all) => all.map((p) => (p.id === pid ? { ...p, packs: p.packs.map((x, j) => (j === i ? { ...x, stock: Math.max(0, Math.round(Number(v) || 0)) } : x)) } : p)));
+  const fail = (e) => toast(e.message || 'Could not update stock', 'error');
+  const setStock = (pid, i, v) => {
+    const pack = products.find((p) => p.id === pid)?.packs[i];
+    if (pack) updateStock([{ productId: pid, size: pack.size, stock: Math.max(0, Math.round(Number(v) || 0)) }]).catch(fail);
+  };
+  const addStock = (pid, i, delta) => {
+    const pack = products.find((p) => p.id === pid)?.packs[i];
+    return pack ? updateStock([{ productId: pid, size: pack.size, delta }]) : Promise.resolve();
+  };
   const restockAll = () => {
     const n = rows.filter((r) => r.stock <= th).length;
-    setProducts((all) => all.map((p) => ({ ...p, packs: p.packs.map((x) => (Number(x.stock) <= th ? { ...x, stock: Number(x.stock) + 100 } : x)) })));
-    toast(`Restocked ${n} low packs (+100 each)`);
+    restockLow(100).then(() => toast(`Restocked ${n} low packs (+100 each)`)).catch(fail);
   };
+  const saveThreshold = () => { const v = Math.max(0, Number(threshold) || 0); if (v !== settings.lowStockThreshold) saveSettings({ ...settings, lowStockThreshold: v }).then(() => toast('Alert level saved')).catch(fail); };
   const max = Math.max(th * 4, ...rows.map((r) => r.stock), 1);
 
   return (
@@ -55,7 +64,7 @@ export default function AdminInventoryPage() {
         <div className="flex flex-col gap-3 border-b border-black/[.06] p-4 sm:p-5 lg:flex-row lg:items-center">
           <Segmented id="inv" value={filter} onChange={setFilter} options={[['all', 'All', rows.length], ['low', 'Needs restock', stat.low + stat.out], ['out', 'Out', stat.out], ['ok', 'Healthy']]} />
           <label className="relative flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-charcoal-400" /><input className="adm-input pl-10" placeholder="Search product, SKU or size" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search inventory" /></label>
-          <label className="flex items-center gap-2 text-sm text-charcoal-500">Alert at ≤<input type="number" min="0" className="adm-input w-20" value={settings.lowStockThreshold} onChange={(e) => setSettings({ ...settings, lowStockThreshold: Math.max(0, Number(e.target.value) || 0) })} aria-label="Low stock threshold" />units</label>
+          <label className="flex items-center gap-2 text-sm text-charcoal-500">Alert at ≤<input type="number" min="0" className="adm-input w-20" value={threshold} onChange={(e) => setThreshold(e.target.value)} onBlur={saveThreshold} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} aria-label="Low stock threshold" />units</label>
         </div>
         {!list.length ? <Empty icon={Boxes} title="Nothing here" text="No pack sizes match this filter." /> : (
           <div className="overflow-x-auto"><table className="adm-table">
@@ -73,12 +82,12 @@ export default function AdminInventoryPage() {
                   </td>
                   <td>
                     <div className="inline-flex items-center rounded-xl border border-black/10 bg-white">
-                      <button type="button" className="flex h-9 w-8 items-center justify-center text-charcoal-500 hover:text-chilli" onClick={() => setStock(p.id, i, stock - 1)} aria-label={`Decrease ${p.name.en} ${x.size}`}><Minus size={14} /></button>
-                      <input type="number" min="0" value={stock} onChange={(e) => setStock(p.id, i, e.target.value)} className="h-9 w-16 border-x border-black/10 bg-transparent text-center text-sm font-semibold tabular-nums outline-none" aria-label={`Stock of ${p.name.en} ${x.size}`} />
-                      <button type="button" className="flex h-9 w-8 items-center justify-center text-charcoal-500 hover:text-leaf-700" onClick={() => setStock(p.id, i, stock + 1)} aria-label={`Increase ${p.name.en} ${x.size}`}><Plus size={14} /></button>
+                      <button type="button" className="flex h-9 w-8 items-center justify-center text-charcoal-500 hover:text-chilli" onClick={() => addStock(p.id, i, -1).catch(fail)} aria-label={`Decrease ${p.name.en} ${x.size}`}><Minus size={14} /></button>
+                      <input key={`${p.id}-${i}-${stock}`} type="number" min="0" defaultValue={stock} onBlur={(e) => { if (Number(e.target.value) !== stock) setStock(p.id, i, e.target.value); }} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} className="h-9 w-16 border-x border-black/10 bg-transparent text-center text-sm font-semibold tabular-nums outline-none" aria-label={`Stock of ${p.name.en} ${x.size}`} />
+                      <button type="button" className="flex h-9 w-8 items-center justify-center text-charcoal-500 hover:text-leaf-700" onClick={() => addStock(p.id, i, 1).catch(fail)} aria-label={`Increase ${p.name.en} ${x.size}`}><Plus size={14} /></button>
                     </div>
                   </td>
-                  <td className="text-right"><div className="inline-flex gap-1">{[10, 50, 100].map((n) => <button key={n} type="button" onClick={() => { setStock(p.id, i, stock + n); toast(`${p.name.en} ${x.size}: +${n}`); }} className="h-8 rounded-lg border border-black/10 px-2 text-xs font-semibold text-charcoal-600 transition hover:border-leaf hover:bg-leaf-50 hover:text-leaf-700">+{n}</button>)}</div></td>
+                  <td className="text-right"><div className="inline-flex gap-1">{[10, 50, 100].map((n) => <button key={n} type="button" onClick={() => addStock(p.id, i, n).then(() => toast(`${p.name.en} ${x.size}: +${n}`)).catch(fail)} className="h-8 rounded-lg border border-black/10 px-2 text-xs font-semibold text-charcoal-600 transition hover:border-leaf hover:bg-leaf-50 hover:text-leaf-700">+{n}</button>)}</div></td>
                 </tr>
               );
             })}</tbody>

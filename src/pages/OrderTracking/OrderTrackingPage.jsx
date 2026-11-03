@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Search, PackageSearch, FastForward, MapPin, CreditCard, CalendarDays, XCircle } from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
@@ -16,14 +16,34 @@ import { formatDate, formatDateTime } from '@/utils/format';
 export default function OrderTrackingPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { getOrder, orders, advanceStatus, cancelOrder } = useOrders();
+  const { getOrder, orders, advanceStatus, cancelOrder, apiMode, fetchOrder, trackOrder } = useOrders();
   const { user } = useAuth();
+  const [remote, setRemote] = useState(null); // API mode: order fetched from the server
+  const [phone, setPhone] = useState('');
+  const [lookupError, setLookupError] = useState('');
+  const [busy, setBusy] = useState(false);
   const { toast } = useUI();
   const { t, lang } = useLocalized();
   const [q, setQ] = useState(orderId || '');
   useDocumentTitle(t('track.title'));
-  const order = orderId ? getOrder(orderId) : null;
-  const demoIds = (user ? orders.filter((o) => o.customer.email === user.email) : orders).slice(0, 4).map((o) => o.id);
+  const local = orderId ? getOrder(orderId) : null;
+  const order = local || (remote && remote.id === String(orderId || '').toUpperCase() ? remote : null);
+  const limited = !!order && !order.totals?.subtotal && order.totals?.subtotal !== 0; // guest tracking view
+  const demoIds = (user ? orders.filter((o) => o.customerId === user.id || (user.email && o.customer?.email === user.email)) : apiMode ? [] : orders).slice(0, 4).map((o) => o.id);
+
+  // Signed-in customers: load the order from their account if it isn't in the list yet.
+  useEffect(() => {
+    if (!apiMode || !orderId || local || !user) return;
+    setBusy(true); setLookupError('');
+    fetchOrder(orderId.toUpperCase()).then(setRemote).catch(() => setLookupError(t('track.notFound'))).finally(() => setBusy(false));
+  }, [apiMode, orderId, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const guestLookup = async (e) => {
+    e.preventDefault(); setLookupError('');
+    if (!/^[6-9]\d{9}$/.test(phone)) { setLookupError(t('validation.phone')); return; }
+    setBusy(true);
+    try { setRemote(await trackOrder(orderId.toUpperCase(), phone)); } catch { setLookupError(t('track.notFoundPhone')); } finally { setBusy(false); }
+  };
   const last = order?.history?.[order.history.length - 1];
 
   return (
@@ -44,7 +64,20 @@ export default function OrderTrackingPage() {
         </p>
       </div>
 
-      {orderId && !order && <p className="mt-8 flex items-center gap-2 rounded-2xl bg-chilli-50 p-5 font-medium text-chilli" role="alert"><PackageSearch size={20} />{t('track.notFound')}</p>}
+      {apiMode && orderId && !order && !user && (
+        <form onSubmit={guestLookup} className="mt-8 rounded-2xl border border-line bg-white p-6">
+          <p className="font-semibold">{t('track.verifyTitle')}</p>
+          <p className="mt-1 text-sm text-charcoal-500">{t('track.verifyText')}</p>
+          <div className="mt-4 flex max-w-md gap-2">
+            <span className="flex items-center rounded-l-xl border border-r-0 border-line bg-cream px-3 text-sm font-semibold">+91</span>
+            <input className="input flex-1 rounded-l-none" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="98765 43210" aria-label={t('checkout.mobile')} />
+            <button type="submit" className="btn-primary" disabled={busy}>{t('track.track')}</button>
+          </div>
+          <p className="mt-3 text-xs text-charcoal-500">{t('track.orSignIn')} <Link to={`/login?redirect=/track-order/${orderId}`} className="link">{t('auth.login')}</Link></p>
+        </form>
+      )}
+      {lookupError && <p className="mt-4 flex items-center gap-2 rounded-2xl bg-chilli-50 p-5 font-medium text-chilli" role="alert"><PackageSearch size={20} />{lookupError}</p>}
+      {!apiMode && orderId && !order && <p className="mt-8 flex items-center gap-2 rounded-2xl bg-chilli-50 p-5 font-medium text-chilli" role="alert"><PackageSearch size={20} />{t('track.notFound')}</p>}
 
       {order && (
         <div className="mt-8 space-y-6 animate-fadeUp">
@@ -64,21 +97,21 @@ export default function OrderTrackingPage() {
             <OrderTimeline order={order} />
             {order.status !== 'delivered' && order.status !== 'cancelled' && (
               <div className="mt-6 flex flex-wrap gap-2 border-t border-charcoal/5 pt-5">
-                <button type="button" className="btn-outline btn-sm" onClick={() => { advanceStatus(order.id); toast(t('track.simulate')); }}><FastForward size={14} />{t('track.simulate')}</button>
-                {['placed', 'confirmed'].includes(order.status) && <button type="button" className="btn-ghost btn-sm text-chilli" onClick={() => { cancelOrder(order.id); toast(t('order.cancelled'), 'info'); }}><XCircle size={14} />{t('order.cancel')}</button>}
+                {advanceStatus && <button type="button" className="btn-outline btn-sm" onClick={() => { advanceStatus(order.id); toast(t('track.simulate')); }}><FastForward size={14} />{t('track.simulate')}</button>}
+                {['placed', 'confirmed'].includes(order.status) && (!apiMode || (user && !limited)) && <button type="button" className="btn-ghost btn-sm text-chilli" onClick={async () => { try { const o = await cancelOrder(order.id); if (o) setRemote(o); toast(t('order.cancelled'), 'info'); } catch (e) { toast(e.message, 'error'); } }}><XCircle size={14} />{t('order.cancel')}</button>}
               </div>
             )}
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <Info icon={CalendarDays} title={t('order.eta')}>{order.status === 'cancelled' ? '—' : formatDate(order.delivery.eta, lang, { weekday: 'long', day: 'numeric', month: 'long' })}</Info>
-            <Info icon={MapPin} title={t('order.deliveryTo')}>{order.address.name}, {order.address.area}, {order.address.city} – {order.address.pin}</Info>
+            <Info icon={MapPin} title={t('order.deliveryTo')}>{[order.address.name, order.address.area, order.address.city].filter(Boolean).join(', ')} – {order.address.pin}</Info>
             <Info icon={CreditCard} title={t('order.paidVia')}>{t(`payment.${order.payment}`)}</Info>
           </div>
           <div className="grid gap-6 rounded-xl border border-line bg-white p-5 sm:p-6 md:grid-cols-[1.4fr_1fr]">
             <div><h2 className="mb-2 font-display text-lg">{t('order.items')}</h2><OrderItems items={order.items} /></div>
-            <div className="md:border-l md:border-line md:pl-6"><OrderSummary totals={order.totals} /></div>
+            <div className="md:border-l md:border-line md:pl-6">{limited ? <p className="flex justify-between text-base font-bold"><span>{t('cart.total')}</span><span>₹{order.totals.total}</span></p> : <OrderSummary totals={order.totals} />}</div>
           </div>
-          <DemoNotice text={t('order.demoNote')} />
+          <DemoNotice demoOnly text={t('order.demoNote')} />
           <div className="text-center"><Link to="/shop" className="btn-outline">{t('actions.continueShopping')}</Link></div>
         </div>
       )}

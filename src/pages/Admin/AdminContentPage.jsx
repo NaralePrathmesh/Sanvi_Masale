@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Upload, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { Panel, Toggle, I18nInput, readImage, PageHeader, Segmented } from '@/components/admin/ui';
 import { useStagger } from '@/components/admin/motion';
+import { API_MODE, uploadImage } from '@/services/api/client';
 import { photo } from '@/assets/images';
 import SmartImage from '@/components/common/SmartImage';
 import { useStore } from '@/context/StoreContext';
@@ -12,7 +13,12 @@ const ARTS = ['bowls', 'pure', 'blend', 'maharashtra', 'south', 'north', 'instan
 const SECTIONS = [['regional', 'Maharashtra editorial'], ['why', 'Why Saanvi Masale'], ['reviews', 'Customer reviews (WhatsApp wall)'], ['recipes', 'Recipe inspiration'], ['story', 'Brand story'], ['newsletter', 'Newsletter']];
 
 export default function AdminContentPage() {
-  const { banners, setBanners, announcements, setAnnouncements, homeContent, setHomeContent, products, recipes, setRecipes } = useStore();
+  const { banners, announcements, homeContent, products, recipes, saveContent, patchRecipe, saving } = useStore();
+  const fail = (e) => toast(e?.message || 'Could not save', 'error');
+  // Each edit updates the page immediately; in API mode it is saved to the server shortly after typing stops.
+  const setBanners = (v) => saveContent('banners', v).catch(fail);
+  const setAnnouncements = (v) => saveContent('announcements', v).catch(fail);
+  const setHomeContent = (v) => saveContent('homeContent', v).catch(fail);
   const { toast } = useUI();
   const [tab, setTab] = useState('banners');
   useDocumentTitle('Admin · Content');
@@ -22,7 +28,7 @@ export default function AdminContentPage() {
 
   return (
     <div ref={ref} className="space-y-6">
-      <PageHeader title="Content" subtitle="Everything customers see on the homepage. Changes go live instantly." />
+      <PageHeader title="Content" subtitle="Everything customers see on the homepage. Changes go live instantly." actions={API_MODE ? <span className={`text-xs font-semibold ${saving ? 'text-turmeric-700' : 'text-leaf-700'}`}>{saving ? 'Saving…' : 'All changes saved'}</span> : null} />
       <div data-anim><Segmented id="ctab" value={tab} onChange={setTab} options={[['banners', 'Hero banners'], ['announce', 'Announcement bar'], ['featured', 'Featured products'], ['sections', 'Homepage sections'], ['recipes', 'Recipes']]} /></div>
 
       {tab === 'banners' && (
@@ -33,7 +39,7 @@ export default function AdminContentPage() {
                 <div>
                   <div className="relative overflow-hidden rounded-xl">{b.image || photo(`hero/${b.id}`) ? <img src={b.image || photo(`hero/${b.id}`).src} alt="" className="aspect-[1920/650] w-full object-cover" /> : <SmartImage art={b.art} alt="" className="aspect-[1920/650] w-full" />}<span className="absolute bottom-2 left-2 right-2 truncate rounded bg-charcoal/70 px-2 py-1 text-xs font-semibold text-white">{b.title.en}</span></div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <label className="btn-outline btn-sm cursor-pointer"><Upload size={13} />Replace image<input type="file" accept="image/*" className="sr-only" onChange={async (e) => { try { setBanner(b.id, { image: await readImage(e.target.files?.[0], 900) }); toast('Banner image updated'); } catch (err) { toast(err.message, 'error'); } e.target.value = ''; }} /></label>
+                    <label className="btn-outline btn-sm cursor-pointer"><Upload size={13} />Replace image<input type="file" accept="image/*" className="sr-only" onChange={async (e) => { try { const file = e.target.files?.[0]; setBanner(b.id, { image: API_MODE ? await uploadImage(file, 'banners') : await readImage(file, 900) }); toast('Banner image updated'); } catch (err) { toast(err.message, 'error'); } e.target.value = ''; }} /></label>
                     {b.image && <button type="button" className="btn-ghost btn-sm" onClick={() => setBanner(b.id, { image: null })}><X size={13} />Remove</button>}
                     <select className="h-9 rounded-full border border-charcoal/15 px-2 text-xs" value={b.art} onChange={(e) => setBanner(b.id, { art: e.target.value })} aria-label="Placeholder art">{ARTS.map((a) => <option key={a}>{a}</option>)}</select>
                   </div>
@@ -100,11 +106,11 @@ export default function AdminContentPage() {
             <thead><tr><th>Recipe</th><th>Categories</th><th>Masalas</th><th>Visible</th><th>Featured on home</th></tr></thead>
             <tbody>{recipes.map((r) => (
               <tr key={r.id}>
-                <td><input className="input h-9 min-h-0 py-1 font-semibold" value={r.name.en} onChange={(e) => setRecipes(recipes.map((x) => (x.id === r.id ? { ...x, name: { ...x.name, en: e.target.value } } : x)))} aria-label="Recipe name (English)" /></td>
+                <td><input className="input h-9 min-h-0 py-1 font-semibold" value={r.name.en} onChange={(e) => patchRecipe(r.id, { name: { en: e.target.value } }).catch(fail)} aria-label="Recipe name (English)" /></td>
                 <td className="text-xs">{r.categories.join(', ')}</td>
                 <td className="text-xs">{r.products.map((id) => products.find((p) => p.id === id)?.name.en).filter(Boolean).join(', ')}</td>
-                <td><Toggle checked={r.active !== false} onChange={(v) => setRecipes(recipes.map((x) => (x.id === r.id ? { ...x, active: v } : x)))} /></td>
-                <td><Toggle checked={r.featured !== false} onChange={(v) => setRecipes(recipes.map((x) => (x.id === r.id ? { ...x, featured: v } : x)))} /></td>
+                <td><Toggle checked={r.active !== false} onChange={(v) => patchRecipe(r.id, { active: v }).catch(fail)} /></td>
+                <td><Toggle checked={r.featured !== false} onChange={(v) => patchRecipe(r.id, { featured: v }).catch(fail)} /></td>
               </tr>
             ))}</tbody>
           </table></div>

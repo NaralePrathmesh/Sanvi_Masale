@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Truck, Zap, MapPin, Pencil, Loader2, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
 import Stepper from '@/components/checkout/Stepper';
 import PaymentOptions, { validatePayment, PAYMENT_METHODS } from '@/components/checkout/PaymentOptions';
+import OtpLogin from '@/components/auth/OtpLogin';
 import FormField from '@/components/common/FormField';
 import EmptyState from '@/components/common/EmptyState';
 import DemoNotice from '@/components/common/DemoBadge';
@@ -32,8 +33,9 @@ export default function CheckoutPage() {
   const { t, l, lang } = useLocalized();
   const navigate = useNavigate();
   const { lines, couponCode, clear } = useCart();
-  const { coupons, settings } = useStore();
-  const { user, saveAddress } = useAuth();
+  const { coupons, settings, refreshCatalog } = useStore();
+  const { user, saveAddress, mode: authMode, ready } = useAuth();
+  const apiMode = authMode === 'api';
   const { placeOrder } = useOrders();
   const { toast } = useUI();
   useDocumentTitle(t('checkout.title'));
@@ -48,6 +50,8 @@ export default function CheckoutPage() {
   const [payModal, setPayModal] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState('');
+  // One idempotency key per checkout attempt: retries/double clicks can never create two orders.
+  const [checkoutKey] = useState(() => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`));
 
   // Prefill from demo account
   useEffect(() => {
@@ -90,7 +94,7 @@ export default function CheckoutPage() {
   };
   const next = () => {
     if (!validateStep(step)) return;
-    if (step === 1 && user && draft.saveAddress && !draft.addressId) {
+    if (!apiMode && step === 1 && user && draft.saveAddress && !draft.addressId) {
       const id = `a-${Date.now()}`;
       saveAddress({ ...address, id, name: draft.customer.name, phone: draft.customer.phone, label: 'Home', isDefault: !(user.addresses || []).length });
       setDraft((d) => ({ ...d, addressId: id }));
@@ -99,18 +103,27 @@ export default function CheckoutPage() {
     setStep((s) => Math.min(LAST, s + 1)); window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const finalize = () => {
-    const order = placeOrder({
+  const finalize = async () => {
+    let order;
+    try {
+      order = await placeOrder({
       customerId: user?.id || `guest-${draft.customer.email}`,
       customer: { ...draft.customer },
       address: { ...address, name: draft.customer.name, phone: draft.customer.phone },
-      items: lines.map((li) => ({ productId: li.productId, size: li.size, qty: li.qty, price: li.price, mrp: li.mrp, comboPct: li.comboPct || 0, name: li.product.name })),
+      items: lines.map((li) => ({ productId: li.productId, size: li.size, qty: li.qty, price: li.price, mrp: li.mrp, comboPct: li.comboPct || 0, comboId: li.comboId, name: li.product.name })),
+      saveAddress: draft.saveAddress && !draft.addressId,
       payment: payment.method,
       paymentInfo: payment.method === 'upi' ? payment.upi : payment.method === 'card' ? `•••• ${payment.cardNumber.replace(/\s/g, '').slice(-4)}` : payment.method === 'netbanking' ? payment.bank : '',
       delivery: { method: deliveryMethod, charge: totals.delivery, eta },
       totals: { subtotal: totals.subtotal, mrpTotal: totals.mrpTotal, savings: totals.savings, comboDiscount: totals.comboDiscount, couponCode: totals.couponCode, couponDiscount: totals.couponDiscount, delivery: totals.delivery, codCharge: totals.codCharge, total: totals.total },
       lang,
-    });
+    }, checkoutKey);
+    } catch (e) {
+      setProcessing(false); setPayModal(false);
+      setPayError(e.message || t('common.error'));
+      if (['CART_CHANGED', 'OUT_OF_STOCK', 'COUPON_INVALID'].includes(e.code)) refreshCatalog();
+      return;
+    }
     clear();
     setDraft((d) => ({ ...d, addressId: d.addressId }));
     navigate(`/order-confirmation/${order.id}`, { replace: true });
@@ -133,13 +146,26 @@ export default function CheckoutPage() {
   const card = 'rounded-xl border border-line bg-white p-5 sm:p-7';
   const Title = ({ children }) => <h2 className="mb-5 text-xl">{children}</h2>;
 
+  if (apiMode && !ready) return <div className="container-x py-16"><p className="text-center text-charcoal-500">{t('common.loading')}</p></div>;
+  if (apiMode && !user) {
+    return (
+      <div className="container-x py-10">
+        <div className="mx-auto max-w-md rounded-2xl border border-line bg-white p-6 shadow-soft sm:p-8">
+          <h1 className="text-2xl">{t('checkout.signInTitle')}</h1>
+          <p className="mt-1 text-sm text-charcoal-500">{t('checkout.signInText')}</p>
+          <div className="mt-6"><OtpLogin onDone={() => toast(t('auth.welcome', { name: '' }))} /></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-x py-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <h1 className="h-page">{t('checkout.title')}</h1>
         {!user && <p className="text-sm text-charcoal-500">{t('checkout.loginPrompt')} <Link to="/login?redirect=/checkout" className="link">{t('checkout.loginLink')}</Link></p>}
       </div>
-      <DemoNotice text={t('checkout.demoBanner')} className="mb-6" />
+      {!apiMode && <DemoNotice text={t('checkout.demoBanner')} className="mb-6" />}
       <div className="mb-8"><Stepper steps={STEP_KEYS.map((k) => t(`checkout.steps.${k}`))} current={step} onStep={(i) => { setErrors({}); setStep(i); }} /></div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -222,7 +248,7 @@ export default function CheckoutPage() {
           {step === 2 && (
             <section className={card}>
               <Title>{t('checkout.paymentMethod')}</Title>
-              <PaymentOptions value={payment} onChange={(p) => { setPayment(p); setErrors({}); }} errors={errors} codAvailable={pinInfo.cod !== false} />
+              <PaymentOptions value={payment} onChange={(p) => { setPayment(p); setErrors({}); }} errors={errors} codAvailable={pinInfo.cod !== false} onlineAvailable={!apiMode} />
             </section>
           )}
 
@@ -277,7 +303,7 @@ export default function CheckoutPage() {
           {(() => { const M = PAYMENT_METHODS.find((m) => m.id === payment.method); return M ? <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-chilli-50 text-chilli"><M.icon size={26} /></span> : null; })()}
           <p className="mt-4 text-3xl font-bold">{formatINR(totals.total)}</p>
           <p className="mt-1 text-sm text-charcoal-500">{t(`payment.${payment.method || 'upi'}`)}</p>
-          <DemoNotice text={t('checkout.mockPaymentBody')} className="mt-5 text-left" />
+          <DemoNotice demoOnly text={t('checkout.mockPaymentBody')} className="mt-5 text-left" />
           {processing ? (
             <p className="mt-6 flex items-center justify-center gap-2 text-sm font-medium" role="status"><Loader2 className="animate-spin text-chilli" size={18} />{t('checkout.processing')}</p>
           ) : (
