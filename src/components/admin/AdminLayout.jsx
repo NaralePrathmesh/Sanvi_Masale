@@ -10,6 +10,7 @@ import { useStore } from '@/context/StoreContext';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ADMIN_NAV, navTitle } from './nav';
+import { can, ROLE_LABEL } from '@/config/permissions';
 import CommandPalette from './CommandPalette';
 import { reduced } from './motion';
 
@@ -21,7 +22,11 @@ import { reduced } from './motion';
 export default function AdminLayout() {
   const { admin, adminLogout } = useAuth();
   const { orders } = useOrders();
-  const { products, reviews, settings } = useStore();
+  const { products, reviews, settings, apiMode, loadAdminData, adminLoaded } = useStore();
+  const role = admin?.role || 'SUPER_ADMIN';
+  const nav = useMemo(() => ADMIN_NAV.map((g) => ({ ...g, items: g.items.filter((i) => can(role, i.perm)) })).filter((g) => g.items.length), [role]);
+  const [loadError, setLoadError] = useState('');
+  useEffect(() => { if (apiMode) loadAdminData().catch((e) => setLoadError(e.message)); }, [apiMode, admin?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const outlet = useOutlet();
@@ -47,7 +52,7 @@ export default function AdminLayout() {
     return () => ctx.revert();
   }, []);
 
-  const logout = () => { adminLogout(); navigate('/admin/login'); };
+  const logout = async () => { await adminLogout(); navigate('/admin/login'); };
   const w = collapsed ? 84 : 264;
 
   const renderSide = (mobile) => {
@@ -63,7 +68,7 @@ export default function AdminLayout() {
         </div>
         <LayoutGroup id={mobile ? 'm' : 'd'}>
           <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3 [scrollbar-width:none]" aria-label="Admin">
-            {ADMIN_NAV.map((g) => (
+            {nav.map((g) => (
               <div key={g.group}>
                 {!mini && <p data-nav className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[.18em] text-white/35">{g.group}</p>}
                 <ul className="space-y-0.5">
@@ -125,7 +130,7 @@ export default function AdminLayout() {
               <p className="hidden text-[11px] font-semibold uppercase tracking-[.14em] text-charcoal-400 sm:block">Admin</p>
               <p className="truncate text-sm font-bold sm:text-base">{navTitle(pathname)}</p>
             </div>
-            <span className="ml-1 hidden items-center gap-1 rounded-full bg-turmeric-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-turmeric-700 md:inline-flex"><FlaskConical size={11} />Demo data</span>
+            {!apiMode && <span className="ml-1 hidden items-center gap-1 rounded-full bg-turmeric-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-turmeric-700 md:inline-flex"><FlaskConical size={11} />Demo data</span>}
             <button type="button" onClick={() => setCmdk(true)} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-black/[.08] bg-white px-3 text-sm text-charcoal-400 shadow-sm transition hover:border-black/15 sm:w-64" aria-label="Search (Ctrl+K)">
               <Search size={16} /><span className="hidden flex-1 text-left sm:inline">Search…</span>
               <kbd className="hidden items-center gap-0.5 rounded-md border border-black/10 px-1.5 text-[10px] font-semibold sm:inline-flex"><Command size={10} />K</kbd>
@@ -133,7 +138,7 @@ export default function AdminLayout() {
             <Notifications pending={pending} lowStock={lowStock} newReviews={newReviews} />
             <span className="hidden h-6 w-px bg-black/10 sm:block" />
             <div className="hidden items-center gap-2.5 sm:flex">
-              <span className="text-right text-xs leading-tight"><span className="block font-semibold">{admin?.name}</span><span className="text-charcoal-400">{admin?.email}</span></span>
+              <span className="text-right text-xs leading-tight"><span className="block font-semibold">{admin?.name} <span className="ml-1 rounded-full bg-black/[.06] px-1.5 py-px text-[10px] font-semibold text-charcoal-500">{ROLE_LABEL[role]}</span></span><span className="text-charcoal-400">{admin?.email}</span></span>
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-chilli to-turmeric text-sm font-bold text-white shadow-md">{admin?.name?.[0] || 'A'}</span>
             </div>
           </header>
@@ -141,7 +146,8 @@ export default function AdminLayout() {
           <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={pathname} initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }} transition={{ duration: 0.32, ease: [0.2, 0.75, 0.25, 1] }}>
-                <Suspense fallback={<AdminSkeleton />}>{outlet}</Suspense>
+                {loadError ? <p className="rounded-2xl bg-chilli-50 p-5 text-sm text-chilli" role="alert">Could not load admin data: {loadError}</p>
+                  : apiMode && !adminLoaded ? <AdminSkeleton /> : <Suspense fallback={<AdminSkeleton />}>{outlet}</Suspense>}
               </motion.div>
             </AnimatePresence>
           </main>

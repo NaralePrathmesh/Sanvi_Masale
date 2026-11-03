@@ -9,6 +9,7 @@ import LanguageSelector from '@/components/layout/LanguageSelector';
 import { StatusBadge } from '@/components/order/OrderTimeline';
 import { WishlistItems } from '@/pages/Wishlist/WishlistPage';
 import { useAuth } from '@/context/AuthContext';
+import PageLoader from '@/components/common/PageLoader';
 import { useOrders } from '@/context/OrderContext';
 import { useUI } from '@/context/UIContext';
 import { useLocalized } from '@/hooks/useLocalized';
@@ -23,20 +24,21 @@ const TABS = [['profile', User], ['orders', Package], ['history', History], ['ad
 
 export default function AccountPage() {
   const { tab = 'profile' } = useParams();
-  const { user, logout } = useAuth();
+  const { user, logout, ready } = useAuth();
   const { t, lang } = useLocalized();
   const { toast } = useUI();
   const navigate = useNavigate();
   useDocumentTitle(t('account.title'));
+  if (!ready) return <PageLoader />;
   if (!user) return <Navigate to={`/login?redirect=/account${tab !== 'profile' ? `/${tab}` : ''}`} replace />;
   const active = TABS.some(([k]) => k === tab) ? tab : 'profile';
 
   return (
     <div className="container-x py-8">
       <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-line bg-white p-6">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-chilli font-display text-2xl text-white">{user.name[0]}</span>
-        <div className="flex-1"><h1 className="text-2xl">{t('header.hello', { name: user.name })}</h1><p className="text-sm text-charcoal-500">{user.email} · {t('account.memberSince', { date: formatDate(user.joinedAt, lang, { month: 'long', year: 'numeric' }) })}</p></div>
-        <button type="button" className="btn-outline" onClick={() => { logout(); toast(t('auth.loggedOut'), 'info'); navigate('/'); }}><LogOut size={16} />{t('header.logout')}</button>
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-chilli font-display text-2xl text-white">{(user.name || '?')[0].toUpperCase()}</span>
+        <div className="flex-1"><h1 className="text-2xl">{t('header.hello', { name: user.name })}</h1><p className="text-sm text-charcoal-500">{user.email || user.phone} · {t('account.memberSince', { date: formatDate(user.joinedAt, lang, { month: 'long', year: 'numeric' }) })}</p></div>
+        <button type="button" className="btn-outline" onClick={async () => { await logout(); toast(t('auth.loggedOut'), 'info'); navigate('/'); }}><LogOut size={16} />{t('header.logout')}</button>
       </div>
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         <nav className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:gap-1 lg:px-0" aria-label={t('account.title')}>
@@ -57,13 +59,14 @@ export default function AccountPage() {
 }
 
 function ProfileTab() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, mode } = useAuth();
+  if (mode === 'api') return <ApiProfileTab />;
   const { orders } = useOrders();
   const { toast } = useUI();
   const { t } = useLocalized();
   const [form, setForm] = useState({ name: user.name, email: user.email, phone: user.phone || '' });
   const [errors, setErrors] = useState({});
-  const mine = orders.filter((o) => o.customer.email === user.email && o.status !== 'cancelled');
+  const mine = orders.filter((o) => isMine(o, user) && o.status !== 'cancelled');
   const submit = (e) => {
     e.preventDefault();
     const errs = validate(form, { name: validators.name, email: validators.email, phone: validators.phone });
@@ -86,18 +89,100 @@ function ProfileTab() {
         </div>
         <button type="submit" className="btn-primary mt-5">{t('actions.save')}</button>
       </form>
-      <DemoNotice text={t('account.demoAccount')} />
+      <DemoNotice demoOnly text={t('account.demoAccount')} />
     </div>
   );
 }
 
+
+/** API mode: name is editable; email and mobile can only be added/changed after verifying an OTP. */
+function ApiProfileTab() {
+  const { user, updateProfile } = useAuth();
+  const { orders } = useOrders();
+  const { toast } = useUI();
+  const { t } = useLocalized();
+  const [name, setName] = useState(user.name || '');
+  const [busy, setBusy] = useState(false);
+  const mine = orders.filter((o) => isMine(o, user) && o.status !== 'cancelled');
+  const save = async (e) => {
+    e.preventDefault();
+    if (name.trim().length < 2) { toast(t('validation.name'), 'error'); return; }
+    setBusy(true);
+    try { await updateProfile({ name: name.trim() }); toast(t('account.profileSaved')); } catch (err) { toast(err.message, 'error'); } finally { setBusy(false); }
+  };
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label={t('account.totalOrders')} value={mine.length} />
+        <Stat label={t('account.totalSpent')} value={formatINR(mine.reduce((s, o) => s + o.totals.total, 0))} />
+        <Stat label={t('account.addresses')} value={(user.addresses || []).length} />
+      </div>
+      <form onSubmit={save} className="rounded-xl border border-line bg-white p-6" noValidate>
+        <h2 className="mb-5 font-display text-xl">{t('account.profile')}</h2>
+        <FormField label={t('checkout.fullName')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+        <button type="submit" className="btn-primary mt-5" disabled={busy}>{t('actions.save')}</button>
+      </form>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ContactCard channel="email" value={user.email} verified={user.emailVerified} />
+        <ContactCard channel="sms" value={user.phone} verified={user.phoneVerified} />
+      </div>
+    </div>
+  );
+}
+
+function ContactCard({ channel, value, verified }) {
+  const { requestContactOtp, verifyContactOtp } = useAuth();
+  const { toast } = useUI();
+  const { t } = useLocalized();
+  const [editing, setEditing] = useState(false);
+  const [input, setInput] = useState('');
+  const [challenge, setChallenge] = useState(null);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const label = channel === 'email' ? t('checkout.email') : t('checkout.mobile');
+  const send = async () => {
+    setBusy(true);
+    try { setChallenge(await requestContactOtp(channel, input.trim())); } catch (e) { toast(e.message, 'error'); } finally { setBusy(false); }
+  };
+  const verify = async () => {
+    setBusy(true);
+    try { await verifyContactOtp(challenge.challengeId, code); toast(t('account.contactVerified')); setEditing(false); setChallenge(null); setCode(''); setInput(''); } catch (e) { toast(e.message, 'error'); } finally { setBusy(false); }
+  };
+  return (
+    <div className="rounded-xl border border-line bg-white p-5">
+      <p className="text-xs uppercase tracking-wide text-charcoal-400">{label}</p>
+      <p className="mt-1 break-all font-semibold">{value || '—'} {value && verified && <span className="ml-1 rounded-full bg-leaf-50 px-2 py-0.5 text-[11px] font-semibold text-leaf-700">{t('account.verified')}</span>}</p>
+      {!editing ? (
+        <button type="button" className="btn-ghost btn-sm mt-3" onClick={() => setEditing(true)}>{value ? t('account.changeContact') : t('account.addContact')}</button>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {!challenge ? (
+            <div className="flex gap-2">
+              <input className="input h-10 min-h-0 flex-1" value={input} onChange={(e) => setInput(channel === 'sms' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value)} inputMode={channel === 'sms' ? 'numeric' : 'email'} placeholder={channel === 'sms' ? '98765 43210' : 'you@example.com'} aria-label={label} />
+              <button type="button" className="btn-primary btn-sm" onClick={send} disabled={busy || !input}>{t('otp.sendCode')}</button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input className="input h-10 min-h-0 flex-1 font-mono tracking-[0.4em]" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="••••••" aria-label={t('otp.codeLabel')} />
+              <button type="button" className="btn-primary btn-sm" onClick={verify} disabled={busy || code.length !== 6}>{t('otp.verify')}</button>
+            </div>
+          )}
+          {challenge?.devCode && <p className="text-xs text-turmeric-700">{t('otp.devCode')} <strong className="font-mono">{challenge.devCode}</strong></p>}
+          <button type="button" className="text-xs text-charcoal-500 hover:underline" onClick={() => { setEditing(false); setChallenge(null); }}>{t('actions.cancel')}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const isMine = (o, user) => o.customerId === user.id || (!!user.email && o.customer?.email === user.email);
 const Stat = ({ label, value }) => <div className="rounded-xl border border-line bg-white p-5"><p className="text-xs uppercase tracking-wide text-charcoal-400">{label}</p><p className="mt-1 text-2xl">{value}</p></div>;
 
 function OrdersTab({ mode }) {
   const { user } = useAuth();
   const { orders } = useOrders();
   const { t, lang } = useLocalized();
-  const mine = orders.filter((o) => o.customer.email === user.email);
+  const mine = orders.filter((o) => isMine(o, user));
   const activeOrders = mine.filter((o) => !['delivered', 'cancelled'].includes(o.status));
   const past = mine.filter((o) => ['delivered', 'cancelled'].includes(o.status));
   const list = mode === 'orders' ? activeOrders : past;
@@ -135,7 +220,7 @@ function AddressesTab() {
     e.preventDefault();
     const errs = validate(editing, { name: validators.name, phone: validators.phone, house: validators.required, street: validators.required, area: validators.required, city: validators.required, state: validators.required, pin: validators.pin });
     setErrors(errs); if (Object.keys(errs).length) return;
-    saveAddress(editing); setEditing(null); toast(t('account.addressSaved'));
+    Promise.resolve(saveAddress(editing)).then(() => { setEditing(null); toast(t('account.addressSaved')); }).catch((err) => toast(err.message, 'error'));
   };
   const f = (k, extra = {}) => ({ value: editing[k], onChange: (e) => setEditing({ ...editing, [k]: e.target.value }), error: errors[k], ...extra });
   return (
@@ -150,7 +235,7 @@ function AddressesTab() {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" className="btn-outline btn-sm" onClick={() => { setErrors({}); setEditing(a); }}><Pencil size={13} />{t('actions.edit')}</button>
                 {!a.isDefault && <button type="button" className="btn-ghost btn-sm" onClick={() => saveAddress({ ...a, isDefault: true })}>{t('account.makeDefault')}</button>}
-                <button type="button" className="btn-ghost btn-sm text-chilli" onClick={() => { deleteAddress(a.id); toast(t('account.addressDeleted'), 'info'); }}><Trash2 size={13} />{t('actions.delete')}</button>
+                <button type="button" className="btn-ghost btn-sm text-chilli" onClick={() => Promise.resolve(deleteAddress(a.id)).then(() => toast(t('account.addressDeleted'), 'info')).catch((err) => toast(err.message, 'error'))}><Trash2 size={13} />{t('actions.delete')}</button>
               </div>
             </div>
           ))}
@@ -182,6 +267,8 @@ function SettingsTab() {
   const { t } = useLocalized();
   const { toast } = useUI();
   const [prefs, setPrefs] = usePersistentState('accountPrefs', { email: true, sms: true });
+  const { mode, logoutEverywhere, deleteAccount } = useAuth();
+  const navigate = useNavigate();
   const [armed, setArmed] = useState(false);
   return (
     <div className="space-y-6">
@@ -198,6 +285,19 @@ function SettingsTab() {
           ))}
         </div>
       </div>
+      {mode === 'api' ? (
+        <div className="rounded-2xl border border-chilli/20 bg-white p-6 shadow-card">
+          <p className="font-semibold">{t('account.security')}</p>
+          <p className="mt-1 text-sm text-charcoal-600">{t('account.logoutAllText')}</p>
+          <button type="button" className="btn-outline mt-3" onClick={async () => { await logoutEverywhere(); toast(t('auth.loggedOut'), 'info'); navigate('/'); }}>{t('account.logoutAll')}</button>
+          <p className="mt-6 font-semibold text-chilli">{t('account.deleteTitle')}</p>
+          <p className="mt-1 text-sm text-charcoal-600">{t('account.deleteText')}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" className={armed ? 'btn-primary' : 'btn-outline border-chilli/40 text-chilli'} onClick={async () => { if (!armed) { setArmed(true); return; } try { await deleteAccount(); toast(t('account.deleted'), 'info'); navigate('/'); } catch (e) { toast(e.message, 'error'); } }}>{armed ? t('account.deleteConfirm') : t('account.deleteAccount')}</button>
+            {armed && <button type="button" className="btn-ghost" onClick={() => setArmed(false)}>{t('actions.cancel')}</button>}
+          </div>
+        </div>
+      ) : (
       <div className="rounded-2xl border border-chilli/20 bg-white p-6 shadow-card">
         <p className="text-sm text-charcoal-600">{t('account.resetConfirm')}</p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -205,6 +305,7 @@ function SettingsTab() {
           {armed && <button type="button" className="btn-ghost" onClick={() => setArmed(false)}>{t('actions.cancel')}</button>}
         </div>
       </div>
+      )}
     </div>
   );
 }

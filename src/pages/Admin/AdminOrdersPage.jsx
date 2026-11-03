@@ -36,7 +36,10 @@ export default function AdminOrdersPage() {
     && (!q || `${o.id} ${o.customer.name} ${o.customer.email} ${o.customer.phone} ${o.address.city}`.toLowerCase().includes(q.toLowerCase()))), [orders, q, status, pay]);
   const counts = Object.fromEntries(ALL.map((s) => [s, orders.filter((o) => o.status === s).length]));
   const order = orders.find((o) => o.id === viewId);
-  const change = (o, s) => { if (o.status === s) return; updateStatus(o.id, s); toast(`${o.id} → ${ORDER_LABEL[s]}`); };
+  const change = async (o, s) => {
+    if (o.status === s) return;
+    try { await updateStatus(o.id, s); toast(`${o.id} → ${ORDER_LABEL[s]}`); } catch (e) { toast(e.message || 'Could not update the order', 'error'); }
+  };
 
   return (
     <div ref={ref} className="space-y-6">

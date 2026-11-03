@@ -13,7 +13,8 @@ const blank = () => ({ name: '', city: '', product: '', rating: 5, text: '', tim
 
 /** Review moderation: hide/show, pin to the top of the homepage pile, edit, delete, add real reviews. */
 export default function AdminReviewsPage() {
-  const { reviews, setReviews, products } = useStore();
+  const { reviews, products, patchReview, deleteReview, adminAddReview, removeSampleReviews, markReviewsSeen, isSampleReview } = useStore();
+  const fail = (e) => toast(e.message || 'Something went wrong', 'error');
   const { toast } = useUI();
   const [params, setParams] = useSearchParams();
   const [filter, setFilter] = useState(params.get('filter') || 'all');
@@ -27,17 +28,17 @@ export default function AdminReviewsPage() {
     if (params.get('new')) setEdit(blank());
     if (params.toString()) setParams({}, { replace: true });
     // Opening this page marks customer submissions as seen (clears the sidebar badge).
-    if (reviews.some((r) => r.source === 'customer' && !r.seen)) setReviews((l) => l.map((r) => (r.source === 'customer' ? { ...r, seen: true } : r)));
+    if (reviews.some((r) => r.source === 'customer' && !r.seen)) markReviewsSeen();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visible = reviews.filter((r) => !r.hidden);
   const avg = visible.reduce((s, r) => s + r.rating, 0) / (visible.length || 1);
-  const isSample = (r) => /^r\d+$/.test(r.id) && !r.source;
+  const isSample = isSampleReview;
   const counts = { all: reviews.length, live: visible.length, hidden: reviews.length - visible.length, pinned: reviews.filter((r) => r.pinned).length, customer: reviews.filter((r) => r.source === 'customer').length, sample: reviews.filter(isSample).length };
   const list = useMemo(() => reviews.filter((r) => (filter === 'all' || (filter === 'live' && !r.hidden) || (filter === 'hidden' && r.hidden) || (filter === 'pinned' && r.pinned) || (filter === 'customer' && r.source === 'customer') || (filter === 'sample' && isSample(r)))
     && (!stars || r.rating === stars) && (!q || `${r.name} ${r.city} ${r.text}`.toLowerCase().includes(q.toLowerCase()))), [reviews, filter, stars, q]);
-  const patch = (id, p, msg) => { setReviews((l) => l.map((r) => (r.id === id ? { ...r, ...p } : r))); if (msg) toast(msg, 'info'); };
-  const remove = (r) => { setReviews((l) => l.filter((x) => x.id !== r.id)); toast(`Deleted review by ${r.name}`, 'info'); };
+  const patch = (id, p, msg) => patchReview(id, p).then(() => msg && toast(msg, 'info')).catch(fail);
+  const remove = (r) => deleteReview(r.id).then(() => toast(`Deleted review by ${r.name}`, 'info')).catch(fail);
   const productName = (slug) => products.find((p) => p.slug === slug)?.name.en;
 
   const save = () => {
@@ -46,9 +47,9 @@ export default function AdminReviewsPage() {
     if (edit.text.trim().length < 5) er.text = 'Write the review text';
     setErrors(er); if (Object.keys(er).length) return;
     const { _new, ...r } = edit;
-    if (_new) { setReviews((l) => [{ ...r, id: `a${Date.now()}`, source: 'admin', seen: true, createdAt: new Date().toISOString() }, ...l]); toast('Review added — it now shows on the website'); }
-    else { setReviews((l) => l.map((x) => (x.id === r.id ? r : x))); toast('Review updated'); }
-    setEdit(null);
+    const done = (msg) => { toast(msg); setEdit(null); };
+    if (_new) adminAddReview(r).then(() => done('Review added — it now shows on the website')).catch(fail);
+    else patchReview(r.id, { name: r.name, city: r.city, product: r.product, rating: r.rating, text: r.text, time: r.time }).then(() => done('Review updated')).catch(fail);
   };
 
   return (
@@ -68,7 +69,7 @@ export default function AdminReviewsPage() {
       {counts.sample > 0 && (
         <div data-anim className="flex flex-wrap items-center gap-3 rounded-[22px] border border-turmeric/40 bg-turmeric-50 p-4 text-sm">
           <span className="min-w-0 flex-1"><strong>{counts.sample} sample reviews</strong> are still on the site. Add your real customer reviews, then remove the samples in one click.</span>
-          <button type="button" className={armed ? 'adm-btn-accent' : 'adm-btn-ghost'} onClick={() => { if (!armed) { setArmed(true); return; } setReviews((l) => l.filter((r) => !isSample(r))); setArmed(false); toast('All sample reviews removed', 'info'); }}>
+          <button type="button" className={armed ? 'adm-btn-accent' : 'adm-btn-ghost'} onClick={() => { if (!armed) { setArmed(true); return; } removeSampleReviews().then(() => { setArmed(false); toast('All sample reviews removed', 'info'); }).catch(fail); }}>
             <Eraser size={15} />{armed ? 'Click again to confirm' : 'Remove all samples'}
           </button>
           {armed && <button type="button" className="text-xs font-semibold text-charcoal-500 hover:underline" onClick={() => setArmed(false)}>Cancel</button>}

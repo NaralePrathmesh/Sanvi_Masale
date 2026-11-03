@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { API_MODE, api } from '@/services/api/client';
 import { useLocalized } from '@/hooks/useLocalized';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { validators } from '@/utils/validation';
@@ -17,7 +18,9 @@ export default function Newsletter() {
     if (err) { setError(err); setMsg(''); return; }
     setError('');
     if (subs.includes(email.toLowerCase())) { setMsg(t('newsletter.already')); return; }
-    setSubs([...subs, email.toLowerCase()]); setMsg(t('newsletter.success')); setEmail('');
+    const done = () => { setSubs([...subs, email.toLowerCase()]); setMsg(t('newsletter.success')); setEmail(''); };
+    if (!API_MODE) { done(); return; }
+    api('/newsletter', { method: 'POST', auth: false, body: { email: email.trim() } }).then(done).catch((ex) => setError(ex.message));
   };
   return (
     <section className="container-x pb-4 pt-16 sm:pt-20">

@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Search, Pencil, Trash2, Upload, X, ExternalLink, LayoutGrid, List, Copy, Eye, EyeOff, Flame, Package, Check, FolderTree } from 'lucide-react';
 import ProductImage from '@/components/product/ProductImage';
 import { Panel, Toggle, I18nInput, readImage, PageHeader, Segmented, Badge, Empty } from '@/components/admin/ui';
+import { API_MODE, uploadImage } from '@/services/api/client';
+import { can } from '@/config/permissions';
+import { useAuth } from '@/context/AuthContext';
 import { Drawer, useStagger, spring } from '@/components/admin/motion';
 import { useStore } from '@/context/StoreContext';
 import { useUI } from '@/context/UIContext';
@@ -21,7 +24,10 @@ const newProduct = (cat) => ({
 const stockOf = (p) => p.packs.reduce((s, x) => s + (Number(x.stock) || 0), 0);
 
 export default function AdminProductsPage() {
-  const { products, setProducts, upsertProduct, deleteProduct, categories, setCategories, settings } = useStore();
+  const { products, saveProduct, patchProduct, deleteProduct, bulkProducts, categories, saveCategory, deleteCategory, settings } = useStore();
+  const { admin } = useAuth();
+  const canWrite = can(admin?.role || 'SUPER_ADMIN', 'products:write');
+  const run = async (fn, okMsg, tone) => { try { await fn(); if (okMsg) toast(okMsg, tone); return true; } catch (e) { toast(e.message || 'Something went wrong', 'error'); return false; } };
   const { toast } = useUI();
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState('products');
@@ -52,20 +58,24 @@ export default function AdminProductsPage() {
 
   const toggleSel = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const allSel = list.length > 0 && list.every((p) => selected.includes(p.id));
-  const bulk = (fn, msg) => { setProducts((all) => all.map((p) => (selected.includes(p.id) ? fn(p) : p))); toast(msg); setSelected([]); };
-  const bulkDelete = () => { setProducts((all) => all.filter((p) => !selected.includes(p.id))); toast(`${selected.length} products deleted`, 'info'); setSelected([]); setConfirm(null); };
-  const duplicate = (p) => { const c = { ...structuredClone(p), id: `p${Date.now()}`, slug: `${p.slug}-copy`, sku: `${p.sku}-C`, name: { ...p.name, en: `${p.name.en} (copy)` }, active: false }; upsertProduct(c); toast(`Duplicated as hidden draft: ${c.name.en}`); };
-  const setActive = (p, v) => { upsertProduct({ ...p, active: v }); toast(`${p.name.en} ${v ? 'is live in the store' : 'hidden from the store'}`, 'info'); };
+  const bulk = async (action, msg) => { if (await run(() => bulkProducts(selected, action), msg)) setSelected([]); };
+  const bulkDelete = async () => { if (await run(() => bulkProducts(selected, 'delete'), `${selected.length} products deleted`, 'info')) { setSelected([]); setConfirm(null); } };
+  const duplicate = (p) => {
+    const stamp = Date.now().toString(36).slice(-4);
+    const c = { ...structuredClone(p), id: `p${Date.now()}`, slug: `${p.slug}-copy-${stamp}`, sku: `${p.sku}-C${stamp}`.toUpperCase(), name: { ...p.name, en: `${p.name.en} (copy)` }, active: false, images: p.images || [] };
+    run(() => saveProduct(c, true), `Duplicated as hidden draft: ${c.name.en}`);
+  };
+  const setActive = (p, v) => run(() => patchProduct(p.id, { active: v }), `${p.name.en} ${v ? 'is live in the store' : 'hidden from the store'}`, 'info');
 
   return (
     <div ref={ref} className="space-y-6">
       <PageHeader title="Products" subtitle={`${products.length} products · ${categories.length} categories`}
         actions={<>
           <Segmented id="ptab" value={tab} onChange={setTab} options={[['products', 'Products'], ['categories', 'Categories']]} />
-          <button type="button" className="adm-btn-accent" onClick={() => setEditing(newProduct(categories[0]?.id))}><Plus size={16} />Add product</button>
+          {canWrite && <button type="button" className="adm-btn-accent" onClick={() => setEditing(newProduct(categories[0]?.id))}><Plus size={16} />Add product</button>}
         </>} />
 
-      {tab === 'categories' ? <CategoryManager categories={categories} setCategories={setCategories} products={products} toast={toast} /> : (
+      {tab === 'categories' ? <CategoryManager categories={categories} saveCategory={saveCategory} deleteCategory={deleteCategory} products={products} toast={toast} run={run} /> : (
         <>
           <div data-anim className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <Segmented id="pstatus" value={status} onChange={setStatus} options={[['all', 'All', counts.all], ['active', 'Live', counts.active], ['hidden', 'Hidden', counts.hidden], ['low', 'Low stock', counts.low], ['out', 'Out of stock', counts.out]]} />
@@ -162,18 +172,18 @@ export default function AdminProductsPage() {
           <motion.div initial={{ y: 90, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 90, opacity: 0 }} transition={spring}
             className="fixed inset-x-3 bottom-4 z-40 mx-auto flex max-w-2xl flex-wrap items-center gap-2 rounded-2xl bg-[#121010] p-2.5 pl-4 text-white shadow-2xl">
             <span className="mr-auto text-sm font-semibold">{selected.length} selected</span>
-            <button type="button" className="adm-btn h-9 bg-white/10 px-3 hover:bg-white/20" onClick={() => bulk((p) => ({ ...p, active: true }), 'Products are live')}><Eye size={15} />Show</button>
-            <button type="button" className="adm-btn h-9 bg-white/10 px-3 hover:bg-white/20" onClick={() => bulk((p) => ({ ...p, active: false }), 'Products hidden')}><EyeOff size={15} />Hide</button>
-            <button type="button" className="adm-btn h-9 bg-white/10 px-3 hover:bg-white/20" onClick={() => bulk((p) => ({ ...p, bestseller: !p.bestseller }), 'Bestseller badge toggled')}><Flame size={15} />Bestseller</button>
+            <button type="button" className="adm-btn h-9 bg-white/10 px-3 hover:bg-white/20" onClick={() => bulk('show', 'Products are live')}><Eye size={15} />Show</button>
+            <button type="button" className="adm-btn h-9 bg-white/10 px-3 hover:bg-white/20" onClick={() => bulk('hide', 'Products hidden')}><EyeOff size={15} />Hide</button>
+            <button type="button" className="adm-btn h-9 bg-white/10 px-3 hover:bg-white/20" onClick={() => bulk(products.filter((p) => selected.includes(p.id)).every((p) => p.bestseller) ? 'bestseller_off' : 'bestseller_on', 'Bestseller badge updated')}><Flame size={15} />Bestseller</button>
             <button type="button" className="adm-btn h-9 bg-chilli px-3 hover:bg-chilli-700" onClick={() => setConfirm({ many: true })}><Trash2 size={15} />Delete</button>
             <button type="button" className="adm-icon text-white/60 hover:bg-white/10 hover:text-white" onClick={() => setSelected([])} aria-label="Clear selection"><X size={16} /></button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {editing && <ProductEditor product={editing} categories={categories} existing={products} onClose={() => setEditing(null)} onSave={(p) => { upsertProduct(p); setEditing(null); toast(`Saved ${p.name.en}`); }} />}
+      {editing && <ProductEditor product={editing} categories={categories} existing={products} onClose={() => setEditing(null)} onSave={async (p, isNew) => { if (await run(() => saveProduct(p, isNew), `Saved ${p.name.en}`)) setEditing(null); }} />}
       <Drawer open={!!confirm} onClose={() => setConfirm(null)} title={confirm?.many ? `Delete ${selected.length} products?` : 'Delete product?'} width="max-w-md"
-        footer={<><button type="button" className="adm-btn-ghost" onClick={() => setConfirm(null)}>Cancel</button><button type="button" className="adm-btn-accent" onClick={() => { if (confirm.many) bulkDelete(); else { deleteProduct(confirm.one.id); toast('Product deleted', 'info'); setConfirm(null); } }}><Trash2 size={15} />Delete</button></>}>
+        footer={<><button type="button" className="adm-btn-ghost" onClick={() => setConfirm(null)}>Cancel</button><button type="button" className="adm-btn-accent" onClick={async () => { if (confirm.many) bulkDelete(); else if (await run(() => deleteProduct(confirm.one.id), 'Product deleted', 'info')) setConfirm(null); }}><Trash2 size={15} />Delete</button></>}>
         <p className="p-6 text-sm text-charcoal-600">{confirm?.many ? `${selected.length} products` : <strong>{confirm?.one?.name.en}</strong>} will be removed from the store, carts and wishlists. Tip: use <em>Hide</em> instead if you might sell it again. (Demo data only — you can restore everything from Settings → Data.)</p>
       </Drawer>
     </div>
@@ -203,16 +213,20 @@ function ProductEditor({ product, categories, onClose, onSave, existing }) {
     if (errs.name) { setTab('details'); return; }
     if (errs.packs) { setTab('pricing'); return; }
     onSave({ ...p, slug, sku: p.sku || `SM-${p.id.toUpperCase().slice(-6)}`, name: { en: p.name.en, hi: p.name.hi || p.name.en, mr: p.name.mr || p.name.en }, short: { en: p.short.en, hi: p.short.hi || p.short.en, mr: p.short.mr || p.short.en },
-      packs: p.packs.map((x) => ({ ...x, price: Number(x.price), mrp: Number(x.mrp) || Number(x.price), stock: Number(x.stock) || 0 })) });
+      packs: p.packs.map((x) => ({ ...x, grams: Number(x.grams) || parseInt(x.size, 10) || 0, price: Number(x.price), mrp: Number(x.mrp) || Number(x.price), stock: Number(x.stock) || 0 })) }, isNew);
   };
   const onFile = async (e) => {
     setImgError('');
-    try { const url = await readImage(e.target.files?.[0]); set({ images: [url, ...p.images].slice(0, 4) }); } catch (err) { setImgError(err.message); }
+    try {
+      const file = e.target.files?.[0];
+      const url = API_MODE ? await uploadImage(file, 'products') : await readImage(file);
+      set({ images: [url, ...p.images].slice(0, 8) });
+    } catch (err) { setImgError(err.message); }
     e.target.value = '';
   };
 
   return (
-    <Drawer open onClose={onClose} title={isNew ? 'New product' : product.name.en} subtitle={isNew ? 'Fill in the details and save to publish' : `${product.sku} · last saved in this browser`} width="max-w-3xl"
+    <Drawer open onClose={onClose} title={isNew ? 'New product' : product.name.en} subtitle={isNew ? 'Fill in the details and save to publish' : `${product.sku} · ${API_MODE ? 'changes go live as soon as you save' : 'saved in this browser (demo)'}`} width="max-w-3xl"
       footer={<><button type="button" className="adm-btn-ghost" onClick={onClose}>Cancel</button><button type="button" className="adm-btn-accent" onClick={save}><Check size={16} />{isNew ? 'Create product' : 'Save changes'}</button></>}>
       <div className="sticky top-0 z-10 border-b border-black/[.06] bg-white/90 px-6 py-3 backdrop-blur"><Segmented id="ptabs" value={tab} onChange={setTab} options={TABS} /></div>
       <AnimatePresence mode="wait">
@@ -290,14 +304,14 @@ function ProductEditor({ product, categories, onClose, onSave, existing }) {
   );
 }
 
-function CategoryManager({ categories, setCategories, products, toast }) {
+function CategoryManager({ categories, saveCategory, deleteCategory, products, run }) {
   const [edit, setEdit] = useState(null);
   const save = () => {
     if (!edit.name.en?.trim()) return;
     const id = edit.id || slugify(edit.name.en);
     const c = { icon: 'Sparkles', desc: { en: '', hi: '', mr: '' }, ...edit, id };
-    setCategories(categories.some((x) => x.id === id) ? categories.map((x) => (x.id === id ? c : x)) : [...categories, c]);
-    setEdit(null); toast('Category saved');
+    const isNew = !categories.some((x) => x.id === id);
+    run(() => saveCategory(c, isNew), 'Category saved').then((ok) => ok && setEdit(null));
   };
   return (
     <>
@@ -313,7 +327,7 @@ function CategoryManager({ categories, setCategories, products, toast }) {
                 <Badge>{n} products</Badge>
                 <div className="flex gap-0.5">
                   <button type="button" className="adm-icon" onClick={() => setEdit(structuredClone(c))} aria-label={`Edit ${c.name.en}`}><Pencil size={15} /></button>
-                  <button type="button" className="adm-icon hover:text-chilli disabled:opacity-30" disabled={n > 0} title={n ? 'Move or delete its products first' : 'Delete'} onClick={() => { setCategories(categories.filter((x) => x.id !== c.id)); toast('Category deleted', 'info'); }} aria-label={`Delete ${c.name.en}`}><Trash2 size={15} /></button>
+                  <button type="button" className="adm-icon hover:text-chilli disabled:opacity-30" disabled={n > 0} title={n ? 'Move or delete its products first' : 'Delete'} onClick={() => run(() => deleteCategory(c.id), 'Category deleted', 'info')} aria-label={`Delete ${c.name.en}`}><Trash2 size={15} /></button>
                 </div>
               </div>
             </motion.div>

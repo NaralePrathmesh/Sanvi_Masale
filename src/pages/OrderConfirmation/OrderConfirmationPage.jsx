@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, MapPin, CreditCard, CalendarDays, Copy, PackageSearch } from 'lucide-react';
 import OrderItems from '@/components/order/OrderItems';
@@ -5,6 +6,7 @@ import OrderSummary from '@/components/cart/OrderSummary';
 import EmptyState from '@/components/common/EmptyState';
 import DemoNotice from '@/components/common/DemoBadge';
 import { useOrders } from '@/context/OrderContext';
+import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useLocalized } from '@/hooks/useLocalized';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -12,11 +14,18 @@ import { formatDate, formatDateTime } from '@/utils/format';
 
 export default function OrderConfirmationPage() {
   const { orderId } = useParams();
-  const { getOrder } = useOrders();
+  const { getOrder, apiMode, fetchOrder } = useOrders();
+  const { user, ready } = useAuth();
+  const [loading, setLoading] = useState(false);
   const { toast } = useUI();
   const { t, lang } = useLocalized();
   const order = getOrder(orderId);
   useDocumentTitle(t('order.confirmed'));
+  useEffect(() => {
+    if (!apiMode || order || !user) return;
+    setLoading(true); fetchOrder(orderId).catch(() => {}).finally(() => setLoading(false));
+  }, [apiMode, orderId, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!order && (loading || (apiMode && !ready))) return <div className="container-x py-16 text-center text-charcoal-500">{t('common.loading')}</div>;
   if (!order) return <div className="container-x py-16"><EmptyState icon={PackageSearch} title={t('order.notFound')}><Link to="/track-order" className="btn-primary">{t('nav.trackOrder')}</Link></EmptyState></div>;
   const a = order.address;
   const copy = async () => { try { await navigator.clipboard.writeText(order.id); toast(t('actions.copied')); } catch { /* ignore */ } };
@@ -25,14 +34,14 @@ export default function OrderConfirmationPage() {
       <div className="text-center animate-fadeUp">
         <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-leaf-50 text-leaf"><CheckCircle2 size={44} /></span>
         <h1 className="mt-5 text-3xl font-bold sm:text-4xl">{t('order.confirmed')}</h1>
-        <p className="mt-2 text-charcoal-500">{t('order.thanks', { name: order.customer.name.split(' ')[0] })}</p>
+        <p className="mt-2 text-charcoal-500">{t('order.thanks', { name: (order.customer?.name || '').split(' ')[0] })}</p>
         <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-card">
           <span className="text-sm text-charcoal-500">{t('order.orderId')}:</span><span className="font-mono font-bold text-chilli">{order.id}</span>
           <button type="button" onClick={copy} className="text-charcoal-400 hover:text-chilli" aria-label={t('actions.copy')}><Copy size={15} /></button>
         </div>
         <p className="mt-3 text-xs text-charcoal-400">{t('order.emailNote', { email: order.customer.email })}</p>
       </div>
-      <DemoNotice text={t('order.demoNote')} className="mx-auto mt-6 max-w-xl" />
+      <DemoNotice demoOnly text={t('order.demoNote')} className="mx-auto mt-6 max-w-xl" />
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <InfoCard icon={MapPin} title={t('order.deliveryTo')}>{a.name}<br />{a.house}, {a.street}, {a.area}, {a.city}, {a.state} – {a.pin}<br />{a.phone}</InfoCard>

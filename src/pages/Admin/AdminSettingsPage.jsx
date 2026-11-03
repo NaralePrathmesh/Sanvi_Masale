@@ -17,7 +17,8 @@ const THEME_NAMES = { classic: ['Saanvi Red', 'Brand red & green on warm cream']
 const NUMERIC = ['deliveryCharge', 'expressDeliveryCharge', 'freeShippingThreshold', 'codCharge', 'standardDeliveryDays', 'expressDeliveryDays', 'lowStockThreshold'];
 
 export default function AdminSettingsPage() {
-  const { settings, setSettings, resetStore } = useStore();
+  const store = useStore();
+  const { settings, saveSettings, resetStore, apiMode } = store;
   const { toast } = useUI();
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState(params.get('tab') || 'store');
@@ -43,9 +44,21 @@ export default function AdminSettingsPage() {
     if (digits(n.whatsapp).length < 10) errs.whatsapp = 'Enter a valid WhatsApp number with country code';
     setErrors(errs);
     if (Object.keys(errs).length) { const first = Object.keys(errs)[0]; setTab(['supportPhone', 'whatsapp'].includes(first) ? 'contact' : first === 'storeName' ? 'store' : 'delivery'); return; }
-    setSettings(n);
-    if (!storage.get('lang', null)) i18n.changeLanguage(n.defaultLanguage);
-    toast('Settings saved — the website is updated');
+    saveSettings(n).then(() => {
+      if (!storage.get('lang', null)) i18n.changeLanguage(n.defaultLanguage);
+      toast('Settings saved — the website is updated');
+    }).catch((e) => {
+      if (e.details) setErrors(Object.fromEntries(e.details.map((d) => [d.field, d.message])));
+      toast(e.message || 'Could not save settings', 'error');
+    });
+  };
+  /** API mode: download the catalogue & content (products, prices, stock, coupons, banners…) as JSON. */
+  const exportCatalogue = () => {
+    const data = { app: 'saanvi-masale', kind: 'catalogue-export', exportedAt: new Date().toISOString(),
+      products: store.products, categories: store.categories, coupons: store.coupons, banners: store.banners, announcements: store.announcements, homeContent: store.homeContent, recipes: store.recipes, settings };
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    a.download = `saanvi-masale-catalogue-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('Catalogue exported');
   };
 
   const exportData = () => {
@@ -150,7 +163,19 @@ export default function AdminSettingsPage() {
               </Panel>
             )}
 
-            {tab === 'data' && (
+            {tab === 'data' && apiMode && (
+              <>
+                <Panel title="Database backups" subtitle="Your store data lives in the PostgreSQL database, not in this browser.">
+                  <ul className="list-disc space-y-1.5 pl-5 text-sm text-charcoal-600">
+                    <li>Turn on your database provider’s automatic daily backups (Supabase: Project → Database → Backups; Neon/RDS: point-in-time restore).</li>
+                    <li>Every admin change is recorded in the audit log with who made it and when.</li>
+                    <li>Orders are never hard-deleted — cancelled orders keep their history.</li>
+                  </ul>
+                  <button type="button" className="adm-btn-primary mt-5" onClick={exportCatalogue}><Download size={16} />Export catalogue (JSON)</button>
+                </Panel>
+              </>
+            )}
+            {tab === 'data' && !apiMode && (
               <>
                 <Panel title="Backup & restore" subtitle="Download everything you changed in the admin (products, prices, orders, reviews, settings…) as one file.">
                   <div className="flex flex-wrap gap-2">

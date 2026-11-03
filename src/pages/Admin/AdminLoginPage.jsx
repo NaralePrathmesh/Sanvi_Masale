@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { gsap } from 'gsap';
-import { Lock, Info, Eye, EyeOff, ArrowRight, LayoutDashboard, Package, ShoppingCart, MessageSquareHeart } from 'lucide-react';
+import { Lock, Info, Eye, EyeOff, ArrowRight, ShieldCheck, LayoutDashboard, Package, ShoppingCart, MessageSquareHeart } from 'lucide-react';
 import { BrandMark } from '@/components/common/Logo';
 import { useAuth } from '@/context/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -11,7 +11,10 @@ import { reduced } from '@/components/admin/motion';
 
 /** Admin sign-in with a GSAP-animated spice-particle backdrop (DEMO auth only). */
 export default function AdminLoginPage() {
-  const { admin, adminLogin } = useAuth();
+  const { admin, adminLogin, adminVerify, mode: authMode } = useAuth();
+  const [twoFa, setTwoFa] = useState(null);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [show, setShow] = useState(false); const [error, setError] = useState(''); const [shake, setShake] = useState(0);
@@ -32,10 +35,18 @@ export default function AdminLoginPage() {
   }, []);
 
   if (admin) return <Navigate to="/admin" replace />;
-  const submit = (e) => {
-    e.preventDefault();
-    if (adminLogin(email, password)) navigate('/admin');
-    else { setError('Invalid admin email or password.'); setShake((n) => n + 1); }
+  const fail = (m) => { setError(m); setShake((n) => n + 1); };
+  const submit = async (e) => {
+    e.preventDefault(); setError('');
+    if (authMode !== 'api') { if (adminLogin(email, password)) navigate('/admin'); else fail('Invalid admin email or password.'); return; }
+    setBusy(true);
+    try { const r = await adminLogin(email.trim(), password); setPassword(''); setTwoFa(r); setCode(''); } catch (err) { fail(err.message); } finally { setBusy(false); }
+  };
+  const verify = async (e) => {
+    e.preventDefault(); setError('');
+    if (!/^\d{6}$/.test(code)) { fail('Enter the 6-digit code from your email.'); return; }
+    setBusy(true);
+    try { await adminVerify(twoFa.challengeId, code); navigate('/admin'); } catch (err) { fail(err.message); setCode(''); } finally { setBusy(false); }
   };
   const dots = Array.from({ length: 22 }, (_, i) => ({ i, size: 6 + ((i * 37) % 22), left: (i * 47) % 100, top: (i * 61) % 100, color: ['#D2161E', '#F0A830', '#5E9C2C', '#E0362F', '#FDEDCB'][i % 5] }));
 
@@ -57,7 +68,7 @@ export default function AdminLoginPage() {
             ))}
           </ul>
         </div>
-        <p className="text-xs text-white/40">Demo admin · data stays in this browser</p>
+        <p className="text-xs text-white/40">{authMode === 'api' ? 'Secure admin · password + one-time code' : 'Demo admin · data stays in this browser'}</p>
       </section>
 
       <section className="relative flex items-center justify-center p-4 sm:p-8">
@@ -66,6 +77,17 @@ export default function AdminLoginPage() {
           <div className="flex items-center gap-3 lg:hidden"><BrandMark className="h-10 w-10" /><span className="font-brand text-xl">सान्वी मसाले</span></div>
           <h2 className="mt-6 text-2xl font-bold tracking-tight lg:mt-0">Welcome back</h2>
           <p className="mt-1 text-sm text-charcoal-500">Sign in to the admin dashboard.</p>
+          {twoFa ? (
+            <form onSubmit={verify} className="mt-7 space-y-4" noValidate>
+              <p className="flex gap-2 rounded-2xl bg-leaf-50 p-3 text-sm text-charcoal-600"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-leaf-700" /><span>Step 2 of 2 — we emailed a 6-digit code to <strong>{twoFa.sentTo}</strong>. It expires in 5 minutes.</span></p>
+              <label className="block"><span className="label">Verification code</span>
+                <input className="adm-input h-14 text-center font-mono text-2xl tracking-[0.5em]" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" autoFocus placeholder="••••••" /></label>
+              {twoFa.devCode && <p className="rounded-xl bg-turmeric-50 px-3 py-2 text-xs text-turmeric-700">Development mode code: <strong className="font-mono">{twoFa.devCode}</strong></p>}
+              <AnimatePresence>{error && <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="rounded-xl bg-chilli-50 px-3 py-2 text-sm text-chilli" role="alert">{error}</motion.p>}</AnimatePresence>
+              <motion.button type="submit" disabled={busy} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="adm-btn-primary h-12 w-full text-[15px]"><ShieldCheck size={16} />{busy ? 'Verifying…' : 'Verify & sign in'}</motion.button>
+              <button type="button" className="adm-btn-ghost w-full" onClick={() => { setTwoFa(null); setError(''); }}>Start again</button>
+            </form>
+          ) : (
           <form onSubmit={submit} className="mt-7 space-y-4" noValidate>
             <label className="block"><span className="label">Email</span><input className="adm-input h-12" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" /></label>
             <label className="block"><span className="label">Password</span>
@@ -73,10 +95,13 @@ export default function AdminLoginPage() {
                 <button type="button" onClick={() => setShow((v) => !v)} className="adm-icon absolute right-1.5 top-1.5" aria-label={show ? 'Hide password' : 'Show password'}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button></span>
             </label>
             <AnimatePresence>{error && <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="rounded-xl bg-chilli-50 px-3 py-2 text-sm text-chilli" role="alert">{error}</motion.p>}</AnimatePresence>
-            <motion.button type="submit" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="adm-btn-primary h-12 w-full text-[15px]"><Lock size={16} />Sign in<ArrowRight size={16} /></motion.button>
-            <button type="button" className="adm-btn-ghost w-full" onClick={() => { setEmail(DEMO_ADMIN.email); setPassword(DEMO_ADMIN.password); }}>Fill demo credentials</button>
+            <motion.button type="submit" disabled={busy} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="adm-btn-primary h-12 w-full text-[15px]"><Lock size={16} />{busy ? 'Checking…' : 'Sign in'}<ArrowRight size={16} /></motion.button>
+            {authMode !== 'api' && <button type="button" className="adm-btn-ghost w-full" onClick={() => { setEmail(DEMO_ADMIN.email); setPassword(DEMO_ADMIN.password); }}>Fill demo credentials</button>}
           </form>
-          <p className="mt-6 flex gap-2 rounded-2xl bg-turmeric-50 p-3 text-xs text-charcoal-600"><Info size={15} className="mt-0.5 shrink-0 text-turmeric-700" /><span>Demo login: <strong>{DEMO_ADMIN.email}</strong> / <strong>{DEMO_ADMIN.password}</strong>. Mock authentication only — not secure. Real admin accounts come with the Phase 2 backend.</span></p>
+          )}
+          {authMode === 'api'
+            ? <p className="mt-6 flex gap-2 rounded-2xl bg-black/[.03] p-3 text-xs text-charcoal-600"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-leaf-700" /><span>Protected sign-in: password + a one-time code emailed to you. Accounts lock for 15 minutes after 5 wrong passwords. Admin accounts are created by the store owner only.</span></p>
+            : <p className="mt-6 flex gap-2 rounded-2xl bg-turmeric-50 p-3 text-xs text-charcoal-600"><Info size={15} className="mt-0.5 shrink-0 text-turmeric-700" /><span>Demo login: <strong>{DEMO_ADMIN.email}</strong> / <strong>{DEMO_ADMIN.password}</strong>. Mock authentication only — not secure.</span></p>}
           <Link to="/" className="mt-5 block text-center text-sm text-charcoal-500 hover:text-chilli">← Back to store</Link>
         </motion.div>
       </section>

@@ -1,8 +1,17 @@
-# सान्वी मसाले (Saanvi Masale) — Indian Masala E-Commerce (Phase 1: Frontend)
+# सान्वी मसाले (Saanvi Masale) — Indian Masala E-Commerce
 
 A premium, fully responsive storefront and admin dashboard for an Indian masala & spices brand.
-**Phase 1 is frontend only.** All payments, logins, orders, deliveries and admin changes are
-**demo functionality** that runs in the browser with mock data and `localStorage`.
+
+The site runs in one of two modes, chosen when it is built:
+
+| Mode | How | What happens |
+|---|---|---|
+| **API mode** (Phase 2) | build with `VITE_API_URL=https://your-api` | Real backend in [`server/`](server/README.md): OTP sign-in by email or mobile, password + OTP for admins, PostgreSQL, Redis rate limits, server-side pricing, stock and orders, Cloudinary or Supabase images |
+| **Demo mode** (Phase 1) | no `VITE_API_URL` | Everything runs in the browser with mock data and `localStorage` (used for the preview link). Payments, logins and orders are clearly labelled DEMO |
+
+- **Backend:** see [`server/README.md`](server/README.md) for setup, the security model, tests and the load-test results.
+- **Going live:** see [`DEPLOYMENT.md`](DEPLOYMENT.md).
+- **Local stack:** `docker compose up -d db redis`, then run `server/` and the shop with `VITE_API_URL=http://localhost:4000 npm run dev`.
 
 > सान्वी मसाले (Saanvi Masale) is an original brand. It is not affiliated with MDH, Everest, Suhana
 > or any other brand. All products, prices, reviews and customers are fictional demo data.

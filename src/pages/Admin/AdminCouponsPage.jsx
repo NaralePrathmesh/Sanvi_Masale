@@ -12,7 +12,8 @@ import { formatINR, formatDate } from '@/utils/format';
 const blank = () => ({ code: '', type: 'percent', value: 10, minOrder: 0, maxDiscount: 0, validFrom: new Date().toISOString().slice(0, 10), validTo: '', active: true, description: { en: '', hi: '', mr: '' }, _new: true });
 
 export default function AdminCouponsPage() {
-  const { coupons, setCoupons } = useStore();
+  const { coupons, saveCoupon, toggleCoupon, deleteCoupon } = useStore();
+  const fail = (e) => toast(e.message || 'Something went wrong', 'error');
   const { toast } = useUI();
   const [params, setParams] = useSearchParams();
   const [edit, setEdit] = useState(null); const [errors, setErrors] = useState({});
@@ -36,8 +37,10 @@ export default function AdminCouponsPage() {
     const { _new, ...clean } = c;
     const label = c.type === 'percent' ? `${c.value}%` : `₹${c.value}`;
     if (!clean.description.en) clean.description = { en: `${label} off`, hi: `${label} की छूट`, mr: `${label} सूट` };
-    setCoupons(_new ? [...coupons, clean] : coupons.map((x) => (x.code === clean.code ? clean : x)));
-    setEdit(null); toast(`Coupon ${clean.code} saved`);
+    if (!clean.validFrom) delete clean.validFrom;
+    saveCoupon(clean, _new).then(() => { setEdit(null); toast(`Coupon ${clean.code} saved`); }).catch((e) => {
+      if (e.details) setErrors(Object.fromEntries(e.details.map((d) => [d.field, d.message]))); else fail(e);
+    });
   };
   const f = (k, type = 'text') => ({ type, className: `adm-input ${errors[k] ? 'border-chilli' : ''}`, value: edit[k], onChange: (e) => setEdit({ ...edit, [k]: e.target.value }) });
   const copy = (code) => { navigator.clipboard?.writeText(code); toast(`Copied ${code}`); };
@@ -76,10 +79,10 @@ export default function AdminCouponsPage() {
                       <span className="inline-flex items-center gap-1"><CalendarClock size={12} />{formatDate(c.validFrom)} – {formatDate(c.validTo)}</span>
                     </div>
                     <div className="mt-auto flex items-center justify-between pt-4">
-                      <Toggle size="sm" checked={c.active} onChange={(v) => { setCoupons(coupons.map((x) => (x.code === c.code ? { ...x, active: v } : x))); toast(`${c.code} ${v ? 'activated' : 'switched off'}`, 'info'); }} label={c.active ? 'On' : 'Off'} />
+                      <Toggle size="sm" checked={c.active} onChange={(v) => toggleCoupon(c.code, v).then(() => toast(`${c.code} ${v ? 'activated' : 'switched off'}`, 'info')).catch(fail)} label={c.active ? 'On' : 'Off'} />
                       <div className="flex gap-0.5">
                         <button type="button" className="adm-icon" onClick={() => { setErrors({}); setEdit({ ...c }); }} aria-label={`Edit ${c.code}`}><Pencil size={15} /></button>
-                        <button type="button" className="adm-icon hover:text-chilli" onClick={() => { setCoupons(coupons.filter((x) => x.code !== c.code)); toast('Coupon deleted', 'info'); }} aria-label={`Delete ${c.code}`}><Trash2 size={15} /></button>
+                        <button type="button" className="adm-icon hover:text-chilli" onClick={() => deleteCoupon(c.code).then(() => toast('Coupon deleted', 'info')).catch(fail)} aria-label={`Delete ${c.code}`}><Trash2 size={15} /></button>
                       </div>
                     </div>
                   </div>

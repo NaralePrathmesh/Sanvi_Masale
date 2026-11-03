@@ -3,6 +3,7 @@ import { CheckCircle2, Loader2, Send, Factory, Package, Tags, UserRound } from '
 import PageHero from '@/components/common/PageHero';
 import FormField from '@/components/common/FormField';
 import Reveal from '@/components/common/Reveal';
+import { API_MODE, api } from '@/services/api/client';
 import { useLocalized } from '@/hooks/useLocalized';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { usePersistentState } from '@/hooks/usePersistentState';
@@ -25,6 +26,12 @@ export default function BulkOrdersPage() {
     const errs = validate(form, { company: validators.name, name: validators.name, email: validators.email, phone: validators.phone, city: validators.required, type: validators.required, volume: validators.required });
     setErrors(errs); if (Object.keys(errs).length) return;
     setState('sending');
+    if (API_MODE) {
+      const message = [form.message, `Business type: ${form.type}`, `Monthly volume: ${form.volume}`].filter(Boolean).join('\n');
+      api('/enquiries', { method: 'POST', auth: false, body: { type: 'bulk', name: form.name, email: form.email, phone: form.phone, subject: `Bulk enquiry — ${form.company}`, message: message.length >= 10 ? message : `${message} (bulk enquiry)`, meta: { company: form.company, city: form.city, quantity: form.volume } } })
+        .then(() => { setForm(empty); setState('sent'); }).catch((ex) => { setState('idle'); setErrors({ volume: ex.message }); });
+      return;
+    }
     setTimeout(() => { setLeads((l) => [{ ...form, at: new Date().toISOString() }, ...l]); setForm(empty); setState('sent'); }, 900);
   };
   return (

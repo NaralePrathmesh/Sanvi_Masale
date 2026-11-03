@@ -9,6 +9,7 @@ import { usePersistentState } from '@/hooks/usePersistentState';
 import { validate, validators } from '@/utils/validation';
 import { brand } from '@/config/brand';
 import { useContact } from '@/hooks/useContact';
+import { API_MODE, api } from '@/services/api/client';
 
 const empty = { name: '', email: '', mobile: '', subject: '', message: '' };
 
@@ -27,6 +28,11 @@ export default function ContactPage() {
     const errs = validate(form, { name: validators.name, email: validators.email, mobile: validators.phone, subject: validators.required, message: validators.minLen(10) });
     setErrors(errs); if (Object.keys(errs).length) return;
     setState('sending');
+    if (API_MODE) {
+      api('/enquiries', { method: 'POST', auth: false, body: { type: 'contact', name: form.name, email: form.email, phone: form.mobile, subject: form.subject, message: form.message } })
+        .then(() => { setState('sent'); setForm(empty); }).catch((ex) => { setState('idle'); setErrors({ message: ex.message }); });
+      return;
+    }
     setTimeout(() => { setMessages((m) => [{ ...form, at: new Date().toISOString() }, ...m]); setState('sent'); setForm(empty); }, 900);
   };
   const set = (k) => (e) => { setForm({ ...form, [k]: e.target.value }); if (state === 'sent') setState('idle'); };

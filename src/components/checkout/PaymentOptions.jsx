@@ -24,19 +24,19 @@ export function validatePayment(p) {
   return e;
 }
 
-export default function PaymentOptions({ value, onChange, errors, codAvailable }) {
+export default function PaymentOptions({ value, onChange, errors, codAvailable, onlineAvailable = true }) {
   const { t } = useLocalized();
   const set = (patch) => onChange({ ...value, ...patch });
   return (
     <div className="space-y-3" role="radiogroup" aria-label={t('checkout.paymentMethod')}>
       {PAYMENT_METHODS.map(({ id, icon: Icon }) => {
-        const active = value.method === id; const disabled = id === 'cod' && !codAvailable;
+        const active = value.method === id; const disabled = (id === 'cod' && !codAvailable) || (id !== 'cod' && !onlineAvailable);
         return (
           <div key={id} className={`rounded-2xl border-2 transition ${active ? 'border-chilli bg-chilli-50/40' : 'border-line bg-white'} ${disabled ? 'opacity-50' : ''}`}>
             <label className={`flex items-center gap-3 p-4 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
               <input type="radio" name="payment" className="h-4 w-4 accent-chilli" checked={active} disabled={disabled} onChange={() => set({ method: id })} />
               <span className={`flex h-10 w-10 items-center justify-center rounded-full ${active ? 'bg-chilli text-white' : 'bg-cream text-charcoal'}`}><Icon size={18} /></span>
-              <span className="flex-1"><span className="block font-semibold">{t(`payment.${id}`)}</span><span className="block text-xs text-charcoal-500">{disabled ? t('checkout.codUnavailable') : t(`payment.${id}Desc`)}</span></span>
+              <span className="flex-1"><span className="block font-semibold">{t(`payment.${id}`)}</span><span className="block text-xs text-charcoal-500">{disabled ? (id === 'cod' ? t('checkout.codUnavailable') : t('checkout.onlineSoon')) : t(`payment.${id}Desc`)}</span></span>
             </label>
             {active && id !== 'cod' && (
               <div className="grid gap-3 border-t border-line p-4 sm:grid-cols-2 animate-fadeUp">
